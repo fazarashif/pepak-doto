@@ -34,11 +34,24 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Then open http://localhost:3000. None of the environment variables are required yet. `OPENDOTA_API_KEY` is optional and only raises the OpenDota rate limit.
+Then open http://localhost:3000.
+
+The only variable you really need locally is `SESSION_SECRET`, and only if you want to sign in. `.env.example` explains the rest. You don't need a database server either: without `DATABASE_URL` the app keeps its data in an embedded Postgres (PGlite) under `.data/`, and it sets up the tables the first time it runs.
+
+Useful scripts:
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm test` | Run the unit tests |
+| `npm run typecheck` | Check types |
+| `npm run lint` | Run ESLint |
+| `npm run db:generate` | Create a migration after changing `src/lib/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations to the database in `DATABASE_URL` |
 
 ## Built with
 
-Next.js 16, React 19, TypeScript and Tailwind CSS, deployed on Vercel.
+Next.js 16, React 19, TypeScript and Tailwind CSS. Postgres through Drizzle (Neon in production, PGlite locally). Sign-in uses Steam OpenID. Hosted on Vercel.
 
 ## Project docs
 
