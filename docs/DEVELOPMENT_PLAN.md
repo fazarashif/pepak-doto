@@ -43,7 +43,7 @@ Semua layanan memakai **free tier**. Kolom terakhir menunjukkan jalur upgrade ka
 | Framework | **Next.js 16 (App Router)** + React 19 + TypeScript | Frontend + backend dalam satu project. *Sudah terpasang* | – |
 | Styling / UI | **Tailwind CSS v4** + **shadcn/ui** | Cepat dan aksesibel | – |
 | Hosting | **Vercel Hobby** | Deploy otomatis dari GitHub, preview per branch, HTTPS | Vercel Pro ($20/bln), **wajib sebelum monetisasi** |
-| Database | **Postgres di Neon** (free tier, integrasi Vercel) + **Drizzle ORM** | Butuh relasi (user, target, cache, setting). Postgres adalah standar yang mudah di-scale | Neon paket berbayar, atau Postgres lain (kode tetap sama karena Drizzle) |
+| Database | **Postgres di Neon** (free tier, integrasi Vercel) + **Drizzle ORM**. Lokal: **PGlite** (Postgres embedded, tanpa server) | Butuh relasi (user, target, cache, setting). Postgres adalah standar yang mudah di-scale | Neon paket berbayar, atau Postgres lain (kode tetap sama karena Drizzle) |
 | Cache | Tabel cache di Postgres + cache memori per instance | Di Vercel memori tidak awet, jadi DB jadi sumber cache | Upstash Redis (free tier juga ada) kalau DB mulai berat |
 | Job terjadwal | **Vercel Cron** (Hobby: sekali sehari) | Refresh data meta (heroStats, matchup) tiap hari | Frekuensi lebih tinggi di Pro |
 | Auth | **Steam OpenID 2.0** (implementasi kecil sendiri) + session cookie ter-signed (`jose`) | Steam memakai OpenID 2.0 yang tidak didukung bawaan Auth.js. Implementasinya pendek dan mudah diaudit | – |
@@ -191,19 +191,19 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 | # | Tugas | Status |
 |---|---|---|
 | 0.1 | Scaffold Next.js + TS + Tailwind | ✅ |
-| 0.2 | Client OpenDota + cache + tipe data | ✅ (cache perlu disesuaikan ke DB) |
+| 0.2 | Client OpenDota + cache + tipe data | ✅ (cache 2 lapis: memori + DB) |
 | 0.3 | Helper Dota (bracket, posisi, CDN, Steam ID) | ✅ |
-| 0.4 | Repo GitHub `fazarashif/pepak-doto` + README | ⏳ sedang dikerjakan |
-| 0.5 | Upgrade Node 22 di kedua laptop; install Zod, TanStack Query, Vitest, Prettier, Drizzle, jose | ⬜ |
-| 0.6 | Hubungkan repo ke Vercel, setup Neon via Vercel Marketplace, env vars | ⬜ |
-| 0.7 | Schema DB awal: `users`, `app_settings`, `api_cache`, `api_usage` + migrasi | ⬜ |
-| 0.8 | Login Steam (OpenID) + session + logout + hapus akun | ⬜ |
-| 0.9 | Guard admin (`ADMIN_STEAM_IDS`) + halaman admin kosong (status layanan) | ⬜ |
-| 0.10 | Layout (tema gelap, navigasi, footer dengan disclaimer Valve), halaman Privacy | ⬜ |
-| 0.11 | Halaman profil + pengaturan bracket/posisi | ⬜ |
-| 0.12 | Komponen `HeroPortrait` + `HeroPicker` | ⬜ |
-| 0.13 | Client STRATZ + tes query matchup dengan token | ⬜ |
-| 0.14 | Penanganan error API yang ramah | ⬜ |
+| 0.4 | Repo GitHub `fazarashif/pepak-doto` + README | ✅ |
+| 0.5 | Upgrade Node 22 di kedua laptop; install Zod, TanStack Query, Vitest, Prettier, Drizzle, jose | ✅ (Node 22 dan TanStack Query menyusul) |
+| 0.6 | Hubungkan repo ke Vercel, setup Neon via Vercel Marketplace, env vars | ⏳ menunggu pemilik |
+| 0.7 | Schema DB awal: `users`, `app_settings`, `api_cache`, `api_usage` + migrasi | ✅ |
+| 0.8 | Login Steam (OpenID) + session + logout + hapus akun | ✅ |
+| 0.9 | Guard admin (`ADMIN_STEAM_IDS`) + halaman admin kosong (status layanan) | ✅ |
+| 0.10 | Layout (tema gelap, navigasi, footer dengan disclaimer Valve), halaman Privacy | ✅ |
+| 0.11 | Halaman profil + pengaturan bracket/posisi | ✅ |
+| 0.12 | Komponen `HeroPortrait` + `HeroPicker` | ✅ |
+| 0.13 | Client STRATZ + tes query matchup dengan token | ✅ |
+| 0.14 | Penanganan error API yang ramah | ✅ |
 
 **Selesai bila:** aplikasi live di Vercel, bisa login Steam, profil tersimpan, admin bisa membuka `/admin`, hero picker berfungsi, dan test jalan.
 

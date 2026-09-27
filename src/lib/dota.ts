@@ -74,6 +74,10 @@ export function parseAccountId(input: string): number | null {
   return null;
 }
 
+export function steamIdToAccountId(steamId64: string): number {
+  return Number(BigInt(steamId64) - STEAM64_OFFSET);
+}
+
 export function formatClock(seconds: number) {
   const sign = seconds < 0 ? "-" : "";
   const s = Math.abs(Math.round(seconds));

@@ -1,5 +1,6 @@
 import "server-only";
 import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
+import { recordUsage } from "@/lib/usage";
 import type {
   HeroStat,
   ItemConstant,
@@ -8,6 +9,7 @@ import type {
   Match,
   Matchup,
   PlayerHero,
+  PlayerProfile,
   RecentMatch,
 } from "./types";
 
@@ -28,6 +30,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (key) url.searchParams.set("api_key", key);
 
   const res = await fetch(url, { ...init, cache: "no-store" });
+  void recordUsage("opendota", Number(res.headers.get("x-rate-limit-remaining-day")));
   if (!res.ok) {
     throw new OpenDotaError(`OpenDota ${res.status} untuk ${path}`, res.status);
   }
@@ -38,55 +41,79 @@ export function isParsed(match: Match) {
   return Boolean(match.od_data?.has_parsed ?? match.version);
 }
 
-// Data meta berubah lambat, jadi di-cache lama untuk menghemat kuota harian.
+const persist = { persist: true };
+
+// Data meta berubah lambat, jadi di-cache lama (juga di database) untuk menghemat kuota harian.
 export const opendota = {
-  heroStats: () => cached("heroStats", 6 * HOUR, () => request<HeroStat[]>("/heroStats")),
+  heroStats: () =>
+    cached("od:heroStats", 6 * HOUR, () => request<HeroStat[]>("/heroStats"), persist),
 
   matchups: (heroId: number) =>
-    cached(`matchups:${heroId}`, 12 * HOUR, () =>
-      request<Matchup[]>(`/heroes/${heroId}/matchups`),
+    cached(
+      `od:matchups:${heroId}`,
+      12 * HOUR,
+      () => request<Matchup[]>(`/heroes/${heroId}/matchups`),
+      persist,
     ),
 
   laneRoles: (laneRole: 1 | 2 | 3 | 4) =>
-    cached(`laneRoles:${laneRole}`, 24 * HOUR, () =>
-      request<LaneRoleRow[]>(`/scenarios/laneRoles?lane_role=${laneRole}`),
+    cached(
+      `od:laneRoles:${laneRole}`,
+      24 * HOUR,
+      () => request<LaneRoleRow[]>(`/scenarios/laneRoles?lane_role=${laneRole}`),
+      persist,
     ),
 
   itemTimings: (heroId: number) =>
-    cached(`itemTimings:${heroId}`, 24 * HOUR, () =>
-      request<ItemTimingRow[]>(`/scenarios/itemTimings?hero_id=${heroId}`),
+    cached(
+      `od:itemTimings:${heroId}`,
+      24 * HOUR,
+      () => request<ItemTimingRow[]>(`/scenarios/itemTimings?hero_id=${heroId}`),
+      persist,
+    ),
+
+  player: (accountId: number) =>
+    cached(`od:player:${accountId}`, 30 * MINUTE, () =>
+      request<PlayerProfile>(`/players/${accountId}`),
     ),
 
   playerHeroes: (accountId: number) =>
-    cached(`playerHeroes:${accountId}`, 30 * MINUTE, () =>
+    cached(`od:playerHeroes:${accountId}`, 30 * MINUTE, () =>
       request<PlayerHero[]>(`/players/${accountId}/heroes`),
     ),
 
   recentMatches: (accountId: number) =>
-    cached(`recent:${accountId}`, 5 * MINUTE, () =>
+    cached(`od:recent:${accountId}`, 5 * MINUTE, () =>
       request<RecentMatch[]>(`/players/${accountId}/recentMatches`),
     ),
 
   // Match yang sudah di-parse tidak akan berubah; yang belum di-parse dicek ulang tiap menit.
+  // JSON match besar (±230 KB), jadi hanya disimpan di memori, tidak di database.
   match: (matchId: number) =>
     cached(
-      `match:${matchId}`,
+      `od:match:${matchId}`,
       (m: Match) => (isParsed(m) ? 24 * HOUR : MINUTE),
       () => request<Match>(`/matches/${matchId}`),
     ),
 
   requestParse: async (matchId: number) => {
-    invalidate(`match:${matchId}`);
+    await invalidate(`od:match:${matchId}`);
     return request<{ job?: { jobId: number } }>(`/request/${matchId}`, { method: "POST" });
   },
 
   items: () =>
-    cached("const:items", 24 * HOUR, () =>
-      request<Record<string, ItemConstant>>("/constants/items"),
+    cached(
+      "od:const:items",
+      24 * HOUR,
+      () => request<Record<string, ItemConstant>>("/constants/items"),
+      persist,
     ),
 
   itemIds: () =>
-    cached("const:item_ids", 24 * HOUR, () =>
-      request<Record<string, string>>("/constants/item_ids"),
+    cached(
+      "od:const:item_ids",
+      24 * HOUR,
+      () => request<Record<string, string>>("/constants/item_ids"),
+      persist,
     ),
 };

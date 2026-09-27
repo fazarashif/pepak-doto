@@ -33,6 +33,17 @@ export interface LaneRoleRow {
   wins: string;
 }
 
+export interface PlayerProfile {
+  profile?: {
+    account_id: number;
+    personaname?: string | null;
+    avatarfull?: string | null;
+    profileurl?: string | null;
+  } | null;
+  rank_tier?: number | null;
+  leaderboard_rank?: number | null;
+}
+
 export interface PlayerHero {
   hero_id: number;
   games: number;

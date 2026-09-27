@@ -1,0 +1,59 @@
+import Link from "next/link";
+import { SteamLogo } from "@phosphor-icons/react/ssr";
+import { HeaderNav, type NavLink } from "@/components/header-nav";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { buttonStyles } from "@/components/ui/button";
+import { getCurrentUser, isAdmin } from "@/lib/auth/session";
+
+const LINKS: NavLink[] = [
+  { href: "/draft", label: "Draft" },
+  { href: "/match", label: "Match review" },
+  { href: "/heroes", label: "Heroes" },
+];
+
+export async function SiteHeader() {
+  const user = await getCurrentUser();
+  const links = isAdmin(user) ? [...LINKS, { href: "/admin", label: "Admin" }] : LINKS;
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-border bg-bg/95 supports-[backdrop-filter]:bg-bg/85 supports-[backdrop-filter]:backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+        <Link href="/" className="text-base font-semibold tracking-tight">
+          Pepak Doto
+        </Link>
+
+        <HeaderNav
+          links={links}
+          account={user ? { name: user.personaName, avatarUrl: user.avatarUrl } : null}
+        />
+
+        <div className="ml-auto hidden items-center gap-2 md:flex">
+          <ThemeToggle />
+          {user ? (
+            <Link
+              href="/profile"
+              className="flex h-11 items-center gap-2 rounded-lg px-2 text-sm hover:bg-surface-2"
+            >
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="size-7 rounded-lg"
+                />
+              ) : null}
+              <span className="max-w-[12rem] truncate">{user.personaName}</span>
+            </Link>
+          ) : (
+            <Link href="/api/auth/steam" prefetch={false} className={buttonStyles({ size: "sm" })}>
+              <SteamLogo size={18} weight="fill" aria-hidden />
+              Sign in with Steam
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
