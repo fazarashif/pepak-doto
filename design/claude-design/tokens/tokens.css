@@ -1,0 +1,124 @@
+/* Pepak Doto design tokens v0.1
+   Names match src/app/globals.css so they drop in. Dark is the default (.dark on <html>).
+   Radiant / dire are for team data only. Sogan and wedel are for surfaces and illustration, never for text. */
+
+:root {
+  --bg: #F4EFE5;
+  --surface: #FBF8F2;
+  --surface-2: #ECE5D6;
+  --border: #D5C9B3;
+  --border-strong: #8F7D62;
+  --fg: #1E1912;
+  --muted: #5F5546;
+  --accent: #C8952E;
+  --accent-fg: #83580F;
+  --on-accent: #1A1206;
+  --accent-soft: #F1E3C2;
+  --radiant: #1A6E44;
+  --dire: #B2362C;
+  --danger: #A3401A;
+  --sogan: #7A4A2A;
+  --sogan-deep: #5C3A22;
+  --wedel: #2F4068;
+  --wedel-deep: #1E2A48;
+  --pattern-opacity: 0.07;
+  --shadow-1: 0 1px 0 0 rgba(58,39,24,.08);
+  --shadow-2: 0 10px 24px -14px rgba(58,39,24,.28);
+  --shadow-3: 0 24px 48px -20px rgba(58,39,24,.35), 0 0 0 1px #D5C9B3;
+}
+
+.dark {
+  --bg: #0F0D0A;
+  --surface: #17140F;
+  --surface-2: #211C15;
+  --border: #3A3226;
+  --border-strong: #76634C;
+  --fg: #F2ECDF;
+  --muted: #ADA38F;
+  --accent: #D6A640;
+  --accent-fg: #E4BB5E;
+  --on-accent: #1A1206;
+  --accent-soft: #2A2213;
+  --radiant: #5FC592;
+  --dire: #EE7468;
+  --danger: #F2845C;
+  --sogan: #8A5A36;
+  --sogan-deep: #2E1F14;
+  --wedel: #34466E;
+  --wedel-deep: #182038;
+  --pattern-opacity: 0.06;
+  --shadow-1: 0 1px 0 0 rgba(0,0,0,.5);
+  --shadow-2: 0 10px 24px -14px rgba(0,0,0,.8);
+  --shadow-3: 0 24px 48px -20px rgba(0,0,0,.85), 0 0 0 1px #3A3226;
+}
+
+:root {
+  /* One radius system. sm: badges, chips-inner, tags. md: controls, inputs, hero portraits. lg: panels, cards, dialogs. pill: filter chips only. */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Type (Google Fonts). Load via next/font/google and point these at its variables. */
+  --font-display: "Alegreya", Georgia, serif;
+  --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --font-javanese: "Noto Sans Javanese", sans-serif; /* decorative accent only */
+
+  /* Spacing: Tailwind's 4px scale. Rhythm used in the mockups:
+     4 inside chips, 8 between controls, 12 inside compact panels,
+     16-24 panel padding, 32-48 between sections on mobile, 64-96 on desktop. */
+
+  /* Motion: only inside @media (prefers-reduced-motion: no-preference). */
+  --ease-page: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-ribbon: 420ms;
+  --dur-reveal: 900ms;
+}
+
+/* Tailwind v4 mapping */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-radiant: var(--radiant);
+  --color-dire: var(--dire);
+  --color-danger: var(--danger);
+  --color-sogan: var(--sogan);
+  --color-sogan-deep: var(--sogan-deep);
+  --color-wedel: var(--wedel);
+  --color-wedel-deep: var(--wedel-deep);
+  --radius-none: var(--radius-none);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* Pattern helper: recolorable batik texture via mask. */
+.batik {
+  position: relative;
+  isolation: isolate;
+}
+.batik::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  opacity: var(--pattern-opacity);
+  -webkit-mask: var(--pattern, url(/brand/pattern-kawung.svg)) repeat / var(--pattern-size, 40px);
+  mask: var(--pattern, url(/brand/pattern-kawung.svg)) repeat / var(--pattern-size, 40px);
+  pointer-events: none;
+}

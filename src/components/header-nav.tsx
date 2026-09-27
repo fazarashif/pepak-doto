@@ -38,7 +38,7 @@ export function HeaderNav({ links, account }: Props) {
                 href={link.href}
                 aria-current={isActive(link.href) ? "page" : undefined}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-fg",
+                  "rounded-md px-3 py-2 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-fg",
                   isActive(link.href) && "text-fg",
                 )}
               >
@@ -76,7 +76,7 @@ export function HeaderNav({ links, account }: Props) {
                   href={link.href}
                   aria-current={isActive(link.href) ? "page" : undefined}
                   className={cn(
-                    "flex h-12 items-center rounded-lg px-3 text-base text-muted hover:bg-surface-2 hover:text-fg",
+                    "flex h-12 items-center rounded-md px-3 text-base text-muted hover:bg-surface-2 hover:text-fg",
                     isActive(link.href) && "bg-surface-2 text-fg",
                   )}
                 >
@@ -89,11 +89,11 @@ export function HeaderNav({ links, account }: Props) {
             {account ? (
               <Link
                 href="/profile"
-                className="flex h-12 items-center gap-3 rounded-lg px-3 hover:bg-surface-2"
+                className="flex h-12 items-center gap-3 rounded-md px-3 hover:bg-surface-2"
               >
                 {account.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={account.avatarUrl} alt="" className="size-8 rounded-lg" />
+                  <img src={account.avatarUrl} alt="" className="size-8 rounded-md" />
                 ) : null}
                 <span className="truncate">{account.name}</span>
               </Link>

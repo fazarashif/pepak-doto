@@ -9,7 +9,7 @@ export function DeleteAccount() {
   const dialog = useRef<HTMLDialogElement>(null);
 
   return (
-    <div className="grid gap-3 rounded-xl border border-danger/30 p-5">
+    <div className="grid gap-3 rounded-lg border border-danger/30 p-5">
       <div className="grid gap-1">
         <h3 className="font-medium">Delete account</h3>
         <p className="text-sm text-muted">
@@ -24,9 +24,9 @@ export function DeleteAccount() {
       <dialog
         ref={dialog}
         aria-labelledby="delete-title"
-        className="m-auto w-[min(28rem,calc(100%-2rem))] rounded-xl border border-border bg-surface p-6 text-fg backdrop:bg-black/60"
+        className="m-auto w-[min(28rem,calc(100%-2rem))] rounded-lg border border-border bg-surface p-6 text-fg shadow-3 backdrop:bg-black/60"
       >
-        <h2 id="delete-title" className="text-lg font-semibold">
+        <h2 id="delete-title" className="font-display text-lg font-bold">
           Delete your account?
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">

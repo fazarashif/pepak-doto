@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SteamLogo } from "@phosphor-icons/react/ssr";
+import { LogoSymbol } from "@/components/brand";
 import { HeaderNav, type NavLink } from "@/components/header-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonStyles } from "@/components/ui/button";
@@ -16,10 +17,11 @@ export async function SiteHeader() {
   const links = isAdmin(user) ? [...LINKS, { href: "/admin", label: "Admin" }] : LINKS;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg/95 supports-[backdrop-filter]:bg-bg/85 supports-[backdrop-filter]:backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-bg">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        <Link href="/" className="text-base font-semibold tracking-tight">
-          Pepak Doto
+        <Link href="/" className="flex items-center gap-2.5 rounded-md">
+          <LogoSymbol className="size-8" />
+          <span className="font-display-sc text-lg font-bold tracking-wide">Pepak Doto</span>
         </Link>
 
         <HeaderNav
@@ -32,7 +34,7 @@ export async function SiteHeader() {
           {user ? (
             <Link
               href="/profile"
-              className="flex h-11 items-center gap-2 rounded-lg px-2 text-sm hover:bg-surface-2"
+              className="flex h-11 items-center gap-2 rounded-md px-2 text-sm hover:bg-surface-2"
             >
               {user.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -41,7 +43,7 @@ export async function SiteHeader() {
                   alt=""
                   width={28}
                   height={28}
-                  className="size-7 rounded-lg"
+                  className="size-7 rounded-md"
                 />
               ) : null}
               <span className="max-w-[12rem] truncate">{user.personaName}</span>
