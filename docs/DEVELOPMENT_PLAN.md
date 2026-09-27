@@ -3,10 +3,16 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.2 (2026-09-27) |
+| Versi | 0.3 (2026-09-27) |
 | Terkait | [PRD.md](PRD.md), [PROGRESS.md](PROGRESS.md) |
 
-**Perubahan dari 0.1:**
+**Perubahan di 0.3:**
+- LLM hanya dari provider gratis.
+- Ada justifikasi pilihan database (§2.1).
+- Steam Web API key tidak wajib.
+- Sebagian besar pertanyaan terbuka sudah terjawab.
+
+**Perubahan di 0.2:**
 - Hosting langsung di Vercel sejak Tahap 0.
 - Database, login Steam, dan kerangka admin dimajukan ke Tahap 0, karena aplikasinya publik dan butuh akun.
 - STRATZ jadi sumber utama draft.
@@ -41,13 +47,50 @@ Semua layanan memakai **free tier**. Kolom terakhir menunjukkan jalur upgrade ka
 | Cache | Tabel cache di Postgres + cache memori per instance | Di Vercel memori tidak awet, jadi DB jadi sumber cache | Upstash Redis (free tier juga ada) kalau DB mulai berat |
 | Job terjadwal | **Vercel Cron** (Hobby: sekali sehari) | Refresh data meta (heroStats, matchup) tiap hari | Frekuensi lebih tinggi di Pro |
 | Auth | **Steam OpenID 2.0** (implementasi kecil sendiri) + session cookie ter-signed (`jose`) | Steam memakai OpenID 2.0 yang tidak didukung bawaan Auth.js. Implementasinya pendek dan mudah diaudit | – |
-| Data | OpenDota (REST), **STRATZ (GraphQL)**, Steam Web API | Lihat PRD §9 | API key berbayar OpenDota |
-| LLM | Interface `LlmProvider`: Gemini, Groq, OpenRouter, provider format OpenAI | Admin memilih model tanpa deploy ulang (F11) | Tambah provider baru cukup satu file |
+| Data | OpenDota (REST), **STRATZ (GraphQL)**. Steam Web API opsional | Lihat PRD §9 | API key berbayar OpenDota |
+| LLM | Interface `LlmProvider`: Gemini (free tier), Groq, OpenRouter, provider format OpenAI. **Hanya yang gratis** | Admin memilih model tanpa deploy ulang (F11) | Model berbayar cukup dengan menambah API key |
+| Analytics | **Vercel Web Analytics** (tanpa cookie) | Gratis, tidak perlu banner cookie | – |
 | Validasi | **Zod** | Input API dan respons eksternal | – |
 | Data fetching client | **TanStack Query** | Debounce draft, polling parse | – |
 | Grafik | Recharts (Tahap 3) | – | – |
 | Testing | **Vitest** + **Playwright** | Logika inti berupa fungsi murni | CI GitHub Actions |
 | Runtime | **Node.js 22 LTS** (di kedua laptop dan Vercel) | Sekarang 20.18. **Perlu upgrade** | – |
+
+### 2.1 Pilihan database: Neon Postgres
+
+**Data yang akan disimpan:**
+- **Relasional:** user, preferensi, target latihan, ringkasan match per user, setting admin, dan log pemakaian LLM/API. Saling terhubung ke user.
+- **Semi-terstruktur:** cache respons API (heroStats, matchup STRATZ, laporan match) dalam bentuk JSON.
+
+Kebutuhan ini paling cocok dengan **database relasional yang juga kuat menyimpan JSON**, dan itu Postgres.
+
+**Perbandingan free tier** (angka dari halaman harga/FAQ masing-masing, dicek ulang saat setup):
+
+| | **Neon (Postgres)** | Supabase (Postgres) | Turso (SQLite) | MongoDB Atlas / Firebase |
+|---|---|---|---|---|
+| Storage gratis | 0,5 GB per project | 500 MB | 5 GB | 512 MB / 1 GB |
+| Batas lain | 100 CU-jam/bulan, *scale to zero* | 2 project aktif | 500 jt baca, 10 jt tulis/bulan | – |
+| **Dijeda saat sepi?** | Tidak. Hanya tidur dan bangun otomatis dalam ±0,5 detik | **Ya, dijeda setelah 1 minggu tanpa aktivitas** | Tidak | Tidak |
+| Integrasi Vercel | Resmi (Marketplace, env var otomatis) | Ada | Ada | Terbatas |
+| Cocok untuk data relasional | Ya | Ya | Ya | Kurang (NoSQL) |
+| Pindah host nanti | Mudah, karena Postgres standar | Mudah | Perlu migrasi ke dialek lain | Sulit |
+| Branch DB untuk development | **Ya** (salinan instan) | Berbayar | Ada | Tidak |
+
+**Alasan memilih Neon:**
+1. **Postgres adalah standar paling umum.** Kalau user bertambah, bisa pindah ke paket Neon berbayar atau Postgres di mana pun (Supabase, AWS, VPS) tanpa mengubah kode, karena kita memakai Drizzle ORM.
+2. **Tidak dijeda saat sepi.** Di awal user masih sedikit, dan Supabase free bisa menjeda project setelah seminggu tanpa aktivitas. Neon hanya "tidur" lalu bangun otomatis saat ada request.
+3. **Terintegrasi dengan Vercel.** Dipasang dari Vercel Marketplace, env var terisi otomatis, dan tersedia driver HTTP yang cocok untuk serverless.
+4. **Branch database untuk dua laptop.** Development memakai branch terpisah dari data produksi, bisa diakses dari kedua laptop, dan bisa di-reset kapan saja.
+5. **JSONB.** Cache respons API bisa disimpan tanpa tabel khusus untuk setiap bentuk data.
+
+**Kelemahan dan cara mengatasinya:**
+| Kelemahan | Mitigasi |
+|---|---|
+| Storage hanya 0,5 GB. JSON satu match mentah ±230 KB, jadi ±2.000 match sudah memenuhi storage | Yang disimpan permanen hanya **laporan ringkas** (±5–10 KB). JSON mentah hanya cache sementara dan dibersihkan otomatis oleh cron. Pemakaian storage tampil di panel admin |
+| Cold start ±0,5 detik setelah DB tidur | Tertutup cache memori + respons halaman. Cron harian ikut "membangunkan" DB |
+| Compute 100 CU-jam/bulan | Dengan *scale to zero* dan user sedikit, pemakaian jauh di bawah batas |
+
+**Alternatif kalau storage jadi masalah sebelum siap bayar:** Turso (5 GB gratis). Drizzle mendukung keduanya, tapi pindah dari Postgres ke SQLite tetap butuh sedikit penyesuaian, jadi ini hanya rencana cadangan.
 
 ## 3. Arsitektur
 
@@ -61,7 +104,7 @@ flowchart LR
   D --> DB[(Neon Postgres<br/>users · settings · cache<br/>goals · narrations)]
   D --> OD[(OpenDota)]
   D --> ST[(STRATZ)]
-  A --> SW[(Steam OpenID +<br/>Steam Web API)]
+  A --> SW[(Steam OpenID)]
   S --> LR[LLM router] --> L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
   CR[Vercel Cron harian] --> D
   AD[Admin panel] --> R
@@ -76,10 +119,20 @@ flowchart LR
 
 ## 4. Desain LLM yang bisa dikonfigurasi admin
 
-**Soal Gemini Pro milik admin:** langganan Google AI Pro **tidak memberikan kuota API**. Menurut dokumentasi Google, benefit langganan hanya berlaku di antarmuka web Google AI Studio. Yang *bisa* dipakai:
-- **Kredit Google Cloud $10/bulan** dari Google Developer Program (termasuk dalam AI Pro). Kredit ini bisa dipakai untuk biaya **Gemini API**, termasuk model Pro. Syaratnya: klaim benefit, buat project Google Cloud, dan **aktifkan billing** (kartu kredit).
-- API key dibuat di Google AI Studio dengan akun yang sama.
-- Model Flash tetap bisa dipakai di free tier tanpa billing.
+**Keputusan: hanya LLM gratis, tanpa billing.** Langganan Google AI Pro tidak memberi kuota API, dan kredit Cloud-nya butuh billing aktif, jadi tidak dipakai.
+
+**Provider gratis yang direncanakan** (batas dari sumber pihak ketiga, dicek ulang saat Tahap 4):
+
+| Provider | Model gratis (contoh) | Kuota (perkiraan) | Peran |
+|---|---|---|---|
+| **Google Gemini** (AI Studio, free tier) | Flash / Flash-Lite | ±1.500 request/hari | **Utama.** Kuota paling longgar, bahasa Inggris bagus |
+| **Groq** | gpt-oss-120b, dll. | ±1.000 request/hari per model | Cadangan 1. Sangat cepat |
+| **OpenRouter** (model `:free`) | DeepSeek, Qwen, Llama | 50 request/hari (1.000 kalau pernah top-up $10) | Cadangan 2 |
+| Provider format OpenAI lain | mis. Cerebras, Mistral | Bervariasi | Opsional, ditambah kalau perlu |
+
+Batas aplikasi (**200 narasi/hari total**) jauh di bawah kuota Gemini saja, jadi cadangan hanya dipakai kalau provider utama error.
+
+**Catatan privasi:** data di free tier Gemini boleh dipakai Google untuk melatih model. Karena itu prompt hanya berisi statistik (tanpa nama, Steam ID, atau match ID), dan hal ini disebutkan di Privacy Policy.
 
 **Komponen:**
 | Komponen | Isi |
@@ -90,7 +143,7 @@ flowchart LR
 | LLM router | Coba provider utama, lalu cadangan, lalu teks template. Mencatat pemakaian ke tabel `llm_usage` |
 | Admin UI | Pilih provider/model, atur urutan cadangan, tombol Test, batas pemakaian, grafik pemakaian |
 
-**Rahasia (API key) disimpan di environment variable Vercel**, bukan di DB. Admin UI hanya menampilkan status "configured / not configured". Ini perlu dikonfirmasi (Q4).
+**Rahasia (API key) disimpan di environment variable Vercel**, bukan di DB. Admin UI hanya menampilkan status "configured / not configured". Batas default: 10 narasi per user per hari, 200 total per hari.
 
 ## 5. Struktur folder
 
@@ -110,7 +163,7 @@ pepak-doto/
 │  ├─ lib/
 │  │  ├─ cache.ts ✅  dota.ts ✅  heroes.ts ✅  opendota/ ✅
 │  │  ├─ stratz/              client GraphQL
-│  │  ├─ steam/               OpenID + Web API
+│  │  ├─ steam/               OpenID (+ Web API opsional)
 │  │  ├─ auth/                session, guard admin
 │  │  ├─ db/                  schema Drizzle + query
 │  │  ├─ draft/  match/  items/
@@ -124,10 +177,10 @@ pepak-doto/
 | Layanan | Batas free (perkiraan, dicek saat setup) | Tanda harus upgrade |
 |---|---|---|
 | Vercel Hobby | Non-komersial; kuota bandwidth dan eksekusi function bulanan | Mulai monetisasi, atau kuota > 80% |
-| Neon Postgres | Storage kecil (±0,5 GB), compute terbatas, *scale to zero* | Storage > 80% atau cold start mengganggu |
+| Neon Postgres | 0,5 GB storage, 100 CU-jam/bulan, *scale to zero* | Storage > 80% atau cold start mengganggu |
 | OpenDota | 3.000 request/hari, 60/menit | Rata-rata > 2.000/hari, lalu pakai API key berbayar |
 | STRATZ | Batas per token (per detik, jam, hari) | Sering terkena rate limit |
-| Gemini API | Flash: free tier. Pro: dari kredit $10/bln | Kredit habis sebelum akhir bulan |
+| Gemini API (free tier) | Flash/Flash-Lite, kuota harian | Sering kena batas, lalu tambah provider cadangan atau pertimbangkan model berbayar |
 | Groq / OpenRouter | Kuota harian gratis | Sering habis, lalu naikkan batas atau pakai model berbayar |
 
 Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan upgrade berdasarkan data.
@@ -231,18 +284,8 @@ skor         = 1,0·counter + 0,6·synergy + 0,7·meta + komposisi + pool
 
 ## 11. Pertanyaan terbuka
 
-Untuk tiap pertanyaan saya tuliskan usulan saya. Anda tinggal setuju atau memilih lain.
+Keputusan yang sudah diambil tercatat di [PRD §11](PRD.md#11-keputusan-yang-sudah-diambil). Yang masih terbuka:
 
 | # | Pertanyaan | Usulan |
 |---|---|---|
-| Q1 | Apakah user **tanpa login** boleh memakai Draft dan Post-Match? | Ya. Login hanya wajib untuk fitur personal (hero pool, recent matches, tren, target) |
-| Q2 | Siapa saja admin? Cukup Anda, atau nanti bisa lebih dari satu? | Daftar Steam ID admin di env var; awalnya hanya Anda |
-| Q3 | Pilihan LLM satu untuk semua fitur, atau bisa beda per fitur? | Satu model utama + cadangan. Per fitur menyusul kalau dibutuhkan |
-| Q4 | API key LLM diisi lewat env var Vercel (lebih aman) atau lewat UI admin (disimpan terenkripsi di DB)? | Env var Vercel |
-| Q5 | Bersedia mengaktifkan **billing Google Cloud** agar kredit $10/bln bisa dipakai untuk Gemini Pro? Berapa batas maksimal biaya per bulan? | Ya, dengan budget alert di $10 |
-| Q6 | Batas narasi LLM per user per hari? | 5 per user, 200 total per hari |
-| Q7 | Domain: `pepak-doto.vercel.app` atau domain sendiri? | Mulai dengan `.vercel.app` |
-| Q8 | Bahasa dokumen di repo: docs Bahasa Indonesia + README Bahasa Inggris? | Ya |
-| Q9 | Apakah Anda punya akun Steam non-limited untuk membuat **Steam Web API key**? | – |
-| Q10 | Database: setuju **Neon Postgres** (usulan) atau ada preferensi lain (Supabase, Turso)? | Neon |
-| Q11 | Perlu analytics pengunjung (Vercel Web Analytics, gratis)? | Ya, tanpa cookie |
+| Q8 | Bahasa di repo: dokumen `docs/` tetap Bahasa Indonesia, sedangkan README, pesan commit, dan PR dalam Bahasa Inggris? | Ya |

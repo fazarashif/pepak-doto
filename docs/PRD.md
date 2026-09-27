@@ -3,13 +3,18 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.2 (2026-09-27) |
+| Versi | 0.3 (2026-09-27) |
 | Pemilik | Faza |
 | Dokumen terkait | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [PROGRESS.md](PROGRESS.md) |
 
 > **Filosofi nama.** *"Pepak"* dalam bahasa Jawa berarti lengkap atau menyeluruh. Pepak Doto membantu pemain memahami Dota lebih dalam: tidak hanya bermain, tetapi belajar dari gameplay, mengenali kesalahan, memahami pola, dan terus berkembang.
 
 **Riwayat perubahan**
+- **0.3:**
+  - Hanya LLM gratis (tanpa billing), tetap bisa diatur admin.
+  - Batas narasi 10 per user dan 200 total per hari.
+  - Nama dan avatar diambil dari OpenDota; Steam Web API key opsional.
+  - Tanpa lisensi.
 - **0.2:**
   - Nama Pepak Doto; aplikasi publik; UI Bahasa Inggris; login Steam.
   - Match Turbo tidak dianalisis; hosting free tier di Vercel yang bisa di-scale.
@@ -60,7 +65,7 @@ Platform: **web responsif**. Dibuka di PC, atau di HP sebagai layar kedua saat b
 | Laporan post-match mudah dipahami | Laporan tampil < 5 detik untuk match yang sudah di-parse; maksimal 3 prioritas perbaikan |
 | Rekomendasi draft relevan | Backtest ke match publik: skor lebih tinggi berkorelasi dengan winrate lebih tinggi |
 | User benar-benar berkembang | (Tahap 3) Target latihan tercapai; tren metrik utama membaik dalam 20 match |
-| Biaya nol di awal | Semua layanan tetap dalam free tier. Pemakaian Gemini Pro tertutup kredit Google Cloud bulanan |
+| Biaya nol di awal | Semua layanan tetap dalam free tier, termasuk LLM. Tidak ada billing yang diaktifkan |
 
 ## 5. Ruang lingkup fitur
 
@@ -187,16 +192,19 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 - Ditunda karena kekhawatiran aplikasi jadi berat. Didiskusikan setelah Tahap 3.
 
 ### F11: Panel admin
-**User story:** *Sebagai admin, saya ingin memilih LLM yang dipakai aplikasi (Gemini Pro dari akun Google saya atau model gratis lain) dan memantau pemakaiannya, tanpa perlu deploy ulang.*
+**User story:** *Sebagai admin, saya ingin memilih LLM gratis yang dipakai aplikasi dan memantau pemakaiannya, tanpa perlu deploy ulang.*
 
-- **Akses:** hanya akun Steam yang terdaftar sebagai admin. Daftarnya disimpan di environment variable, bukan di UI.
+- **Akses:** awalnya hanya pemilik aplikasi. Steam ID admin disimpan di environment variable, bukan di UI.
 - **Pengaturan LLM:**
-  - Daftar provider yang tersedia: **Google Gemini** (Pro atau Flash), **Groq**, **OpenRouter**, dan **provider lain yang kompatibel dengan format OpenAI**.
+  - Hanya layanan dengan **free tier**, tanpa billing.
+  - Provider yang tersedia: **Google Gemini** (free tier Flash / Flash-Lite), **Groq**, **OpenRouter** (model `:free`), dan **provider lain yang kompatibel dengan format OpenAI**, misalnya Cerebras atau Mistral.
+  - Kalau suatu saat mau memakai model berbayar, cukup menambah API key tanpa mengubah kode.
+  - API key disimpan di **environment variable Vercel**; UI hanya menampilkan status "configured".
   - Provider hanya tampil aktif kalau API key-nya sudah diisi di server.
   - Admin memilih **model utama** dan **urutan cadangan**.
   - Tombol **"Test"** untuk mencoba provider.
   - Opsi mematikan fitur LLM sepenuhnya.
-- **Batas pemakaian:** batas narasi per user per hari dan batas total per hari, untuk menjaga kuota dan kredit.
+- **Batas pemakaian** (default, bisa diubah admin): **10 narasi per user per hari**, **200 total per hari**.
 - **Monitoring:**
   - jumlah request LLM per provider (hari ini dan bulan ini), perkiraan token
   - sisa kuota OpenDota dan STRATZ
@@ -211,7 +219,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | Data | Sumber | Dipakai untuk | Disimpan? |
 |---|---|---|---|
 | **SteamID64** | Steam OpenID (bukti login) | Identitas akun; dikonversi ke account ID Dota untuk mengambil data OpenDota/STRATZ | Ya |
-| **Nama profil + avatar + URL profil** | Steam Web API `GetPlayerSummaries` | Tampilan di header dan profil | Ya (diperbarui saat login) |
+| **Nama profil + avatar + URL profil** | OpenDota `/players/{id}` (profil Steam yang disalin OpenDota). Steam Web API opsional untuk data terbaru | Tampilan di header dan profil | Ya (diperbarui saat login) |
 | **Rank (medal) + estimasi MMR** | OpenDota `/players/{id}` | Default bracket untuk draft | Ya (diperbarui berkala) |
 | **Riwayat match + statistik hero** | OpenDota / STRATZ | Hero pool, tren, target latihan, recent matches | Ringkasan per match saja |
 | **Preferensi** (bracket, posisi) & **target latihan** | Input user | Personalisasi | Ya |
@@ -220,7 +228,8 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 
 **Catatan penting:**
 - **Login Steam tidak membuka data match privat.** Data match tetap berasal dari OpenDota/STRATZ, jadi user tetap harus mengaktifkan *Expose Public Match Data* di pengaturan Dota 2.
-- Pepak Doto butuh **Steam Web API key** (milik admin) untuk `GetPlayerSummaries`. Syarat dari Steam: akun tidak *limited* (pernah belanja minimal $5) dan harus mengisi nama domain saat mendaftar.
+- **Steam Web API key tidak wajib.** Nama dan avatar diambil dari OpenDota (terverifikasi). Kalau nanti dibutuhkan data yang lebih segar, admin bisa membuat key di steamcommunity.com/dev/apikey. Syaratnya akun tidak *limited* (pernah belanja minimal $5) dan mengisi domain `pepak-doto.vercel.app`.
+- User yang **tidak login** tetap bisa memakai Draft Assistant dan Post-Match Analyzer.
 - User bisa menghapus akunnya; semua data miliknya ikut terhapus.
 - Tersedia halaman **Privacy Policy** dan disclaimer *"Dota 2 is a registered trademark of Valve Corporation. Pepak Doto is not affiliated with Valve."*
 
@@ -256,7 +265,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | Peran lane hero | OpenDota `/scenarios/laneRoles` / STRATZ | – |
 | Item populer, waktu beli item, winrate per durasi | OpenDota | Terverifikasi |
 | Match, benchmarks, parse replay | OpenDota | Terverifikasi |
-| Profil Steam | Steam Web API | Butuh Steam Web API key |
+| Profil Steam (nama, avatar) | OpenDota `/players/{id}`; Steam Web API opsional | Terverifikasi |
 | Konstanta (hero, item, skill) | OpenDota `/constants/*` (dotaconstants) | Terverifikasi |
 | Sifat hero untuk counter item | **Disusun sendiri** | Pekerjaan manual per patch |
 | Narasi | LLM pilihan admin | Lihat F11 |
@@ -267,7 +276,9 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 |---|---|---|
 | Kuota atau token STRATZ bermasalah | Draft kurang akurat | Cadangan otomatis ke OpenDota. Token diperpanjang tahunan (lihat checklist) |
 | Kuota OpenDota habis saat user bertambah | Fitur berhenti | Cache di DB, refresh meta terjadwal. API key berbayar kalau perlu |
-| Kredit Gemini habis atau biaya berlebih | Tagihan tidak terduga | Batas harian di F11, budget alert di Google Cloud, cadangan ke model gratis |
+| Kuota LLM gratis habis atau kebijakannya berubah | Narasi tidak tampil | Beberapa provider cadangan, batas harian di F11, teks template sebagai pilihan terakhir |
+| Free tier Gemini boleh dipakai Google untuk melatih model | Isi prompt terlihat oleh Google | Prompt hanya berisi statistik match (tanpa nama atau ID pemain). Disebutkan di Privacy Policy |
+| Storage DB free (0,5 GB) penuh | Tulis data gagal | Simpan ringkasan, bukan JSON match mentah. Cache mentah dibersihkan otomatis. Pantau di admin |
 | Free tier (Vercel/DB) terlampaui | Aplikasi lambat atau berhenti | Monitoring di F11. Jalur upgrade sudah dirancang |
 | Profil atau match privat | Fitur personal tidak jalan | Pesan jelas beserta cara mengaktifkan *Expose Public Match Data* |
 | Replay kedaluwarsa atau parse gagal | Analisis detail tidak ada | Tetap tampilkan analisis dasar |
@@ -284,10 +295,18 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D5 | Login | Steam |
 | D6 | Turbo | Tidak dianalisis |
 | D7 | Nama | Pepak Doto |
-| D8 | LLM | Bisa dikonfigurasi admin: Gemini Pro milik admin atau model gratis |
+| D8 | LLM | Hanya LLM gratis (tanpa billing). Satu model utama + cadangan, dipilih admin |
 | D9 | Monetisasi | Mungkin nanti; mulai non-komersial |
-| D10 | Repo | GitHub `fazarashif/pepak-doto` (public) |
+| D10 | Repo | GitHub `fazarashif/pepak-doto` (public), **tanpa lisensi** |
 | D11 | Logo | Didiskusikan nanti; tanyakan ke pemilik saat waktunya |
+| D12 | Tanpa login | Draft dan Post-Match bisa dipakai tanpa login |
+| D13 | Admin | Hanya pemilik aplikasi (dulu) |
+| D14 | API key | Environment variable Vercel |
+| D15 | Batas LLM | 10 per user, 200 total per hari |
+| D16 | Domain | `pepak-doto.vercel.app` dulu |
+| D17 | Database | Neon Postgres (justifikasi di DEVELOPMENT_PLAN §2.1) |
+| D18 | Analytics | Vercel Web Analytics (tanpa cookie) |
+| D19 | Steam Web API key | Tidak wajib; profil dari OpenDota |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).
