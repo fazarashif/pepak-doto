@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { SteamLogo } from "@phosphor-icons/react/ssr";
 import { LogoSymbol } from "@/components/brand";
 import { HeaderNav, type NavLink } from "@/components/header-nav";
+import { SteamSignIn } from "@/components/steam-sign-in";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { buttonStyles } from "@/components/ui/button";
 import { getCurrentUser, isAdmin } from "@/lib/auth/session";
 
 const LINKS: NavLink[] = [
@@ -49,10 +48,7 @@ export async function SiteHeader() {
               <span className="max-w-[12rem] truncate">{user.personaName}</span>
             </Link>
           ) : (
-            <Link href="/api/auth/steam" prefetch={false} className={buttonStyles({ size: "sm" })}>
-              <SteamLogo size={18} weight="fill" aria-hidden />
-              Sign in with Steam
-            </Link>
+            <SteamSignIn size="sm" />
           )}
         </div>
       </div>

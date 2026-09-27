@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SteamLogo } from "@phosphor-icons/react/ssr";
 import { LogoSymbol } from "@/components/brand";
-import { buttonStyles } from "@/components/ui/button";
+import { SteamSignIn } from "@/components/steam-sign-in";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -46,14 +45,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
           only tells us your Steam ID, which we use to find your public Dota matches.
         </p>
 
-        <Link
-          href={`/api/auth/steam?next=${encodeURIComponent(next)}`}
-          prefetch={false}
-          className={buttonStyles({ size: "lg" })}
-        >
-          <SteamLogo size={20} weight="fill" aria-hidden />
-          Sign in with Steam
-        </Link>
+        <SteamSignIn next={next} size="lg" />
 
         <p className="text-sm text-muted">
           You can use the draft assistant and match review without an account. See the{" "}

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { CheckCircle, SteamLogo, XCircle } from "@phosphor-icons/react/ssr";
+import { CheckCircle, XCircle } from "@phosphor-icons/react/ssr";
 import { ChapterLabel, Divider, FramedPanel, MaskedSvg } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
+import { SteamSignIn } from "@/components/steam-sign-in";
 import { buttonStyles } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { assetUrl, type HeroInfo } from "@/lib/dota";
@@ -53,14 +54,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 Open your profile
               </Link>
             ) : (
-              <Link
-                href="/api/auth/steam"
-                prefetch={false}
-                className={buttonStyles({ size: "lg" })}
-              >
-                <SteamLogo size={20} weight="fill" aria-hidden />
-                Sign in with Steam
-              </Link>
+              <SteamSignIn size="lg" />
             )}
             <Link href="/heroes" className={buttonStyles({ variant: "secondary", size: "lg" })}>
               Browse heroes
