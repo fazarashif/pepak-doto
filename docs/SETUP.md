@@ -138,6 +138,38 @@ npx vercel env pull .env.local
 ```
 Hasilnya berisi variabel environment *Development*. `DATABASE_URL` tidak ikut, jadi laptop tetap memakai PGlite.
 
+## G. Sinkron data hero harian (GitHub Actions)
+
+Data STRATZ (matchup, posisi, build item) dan winrate per durasi dari OpenDota diambil **sekali sehari oleh GitHub Actions**, lalu disimpan di Neon. Website hanya membaca salinan di Neon.
+
+Alasannya, token STRATZ hanya boleh dipakai dari **2 alamat IP per 15 menit**, sedangkan server Vercel memakai IP yang berganti-ganti. Karena itu di Vercel aplikasi tidak memanggil STRATZ langsung.
+
+**Sekali saja: isi secret di GitHub**
+1. Ambil connection string Neon production:
+   - Vercel → project `pepak-doto` → **Storage** → klik database Neon → tab **.env.local** → klik **Show secret**.
+   - Salin nilai `DATABASE_URL` (diawali `postgresql://`).
+2. Buka https://github.com/fazarashif/pepak-doto → **Settings → Secrets and variables → Actions → New repository secret**.
+3. Tambahkan dua secret:
+
+   | Name | Secret |
+   |---|---|
+   | `STRATZ_TOKEN` | Token STRATZ (sama dengan di `.env.local`) |
+   | `DATABASE_URL` | Connection string dari langkah 1 |
+
+   `OPENDOTA_API_KEY` boleh dilewati; tanpa key tetap jalan.
+
+**Menjalankan pertama kali (tidak perlu menunggu jadwal)**
+1. Pastikan PR yang berisi tabel `hero_data` sudah di-merge dan deploy production selesai (log build berisi `[migrate] done`).
+2. GitHub → tab **Actions** → **Sync hero data** → **Run workflow** → **Run workflow**.
+3. Tunggu sekitar 10 menit. Kalau hijau, buka **/admin**: baris *Hero data sync* menampilkan waktu sinkron terakhir.
+
+Setelah itu workflow jalan otomatis setiap hari pukul 02:15 UTC (09:15 WIB).
+
+**Catatan:**
+- GitHub mematikan jadwal otomatis kalau repo tidak ada aktivitas (commit) selama 60 hari. Kalau baris *Hero data sync* di /admin berwarna merah karena sudah lebih dari 2 hari, buka tab Actions lalu aktifkan lagi workflow-nya.
+- Di laptop tidak perlu sinkron. Data diambil langsung dari STRATZ saat dibutuhkan, lalu disimpan di database lokal. Kalau mau mengisi semuanya sekaligus, stop `npm run dev` lalu jalankan `npm run sync:hero-data -- --local`.
+- Kalau token STRATZ sedang dipakai dari 2 IP lain (mis. laptop dan sandbox), sinkron menunggu sampai IP bebas (maksimal ±15 menit), lalu lanjut.
+
 ## Masalah umum
 
 | Gejala | Penyebab | Solusi |

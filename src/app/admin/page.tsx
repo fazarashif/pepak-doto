@@ -4,6 +4,8 @@ import { count } from "drizzle-orm";
 import { CheckCircle, MinusCircle, WarningCircle } from "@phosphor-icons/react/ssr";
 import { getCurrentUser, isAdmin, isAuthConfigured } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db";
+import { getSyncStatus } from "@/lib/hero-data/store";
+import type { SyncStatus } from "@/lib/hero-data/write";
 import { isStratzConfigured } from "@/lib/stratz/client";
 import { recentUsage } from "@/lib/usage";
 
@@ -24,11 +26,13 @@ export default async function AdminPage() {
   let userCount: number | null = null;
   let dbError: string | null = null;
   let usage: Awaited<ReturnType<typeof recentUsage>> = [];
+  let sync: SyncStatus | null = null;
   try {
     const db = await getDb();
     const [row] = await db.select({ n: count() }).from(schema.users);
     userCount = row.n;
     usage = await recentUsage(7);
+    sync = await getSyncStatus();
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Unknown error";
   }
@@ -57,6 +61,7 @@ export default async function AdminPage() {
       status: isStratzConfigured() ? "ok" : "off",
       detail: isStratzConfigured() ? quota("stratz", "15,000/day") : "STRATZ_TOKEN is not set.",
     },
+    heroDataRow(sync),
     {
       name: "Steam Web API",
       status: process.env.STEAM_WEB_API_KEY ? "ok" : "off",
@@ -136,6 +141,27 @@ export default async function AdminPage() {
       </section>
     </div>
   );
+}
+
+function heroDataRow(sync: SyncStatus | null): ServiceRow {
+  const name = "Hero data sync";
+  if (!sync) {
+    return {
+      name,
+      status: "off",
+      detail: "Never ran. It runs daily on GitHub Actions, or with npm run sync:hero-data.",
+    };
+  }
+  const hours = Math.round((Date.now() - new Date(sync.finishedAt).getTime()) / 3_600_000);
+  const when =
+    hours < 1 ? "less than an hour ago" : hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+  const errors = sync.errors.length ? ` ${sync.errors.length} error(s): ${sync.errors[0]}` : "";
+  return {
+    name,
+    // Lebih dari 2 hari tanpa sinkron berarti jadwal harian berhenti.
+    status: !sync.ok || hours > 48 ? "error" : "ok",
+    detail: `Last run ${when}, ${sync.rows.toLocaleString("en-US")} rows, ${sync.stratzRequests} STRATZ requests.${errors}`,
+  };
 }
 
 function StatusIcon({ status }: { status: Status }) {

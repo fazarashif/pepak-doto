@@ -49,6 +49,7 @@ Useful scripts:
 | `npm run db:generate` | Create a migration after changing `src/lib/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to the database in `DATABASE_URL` |
 | `npm run backtest` | Check the draft scores against recent public matches (needs `STRATZ_TOKEN`) |
+| `npm run sync:hero-data` | Copy STRATZ and OpenDota hero stats into the database. Runs daily on GitHub Actions; add `-- --local` to fill the local database (stop `npm run dev` first) |
 
 ## Built with
 

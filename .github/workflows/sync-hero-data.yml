@@ -1,0 +1,31 @@
+name: Sync hero data
+
+# Pulls STRATZ and OpenDota hero stats into the Neon database once a day.
+# The site only reads the stored copy, because a STRATZ token may only be used
+# from two IP addresses per 15 minutes and Vercel functions change IPs.
+
+on:
+  schedule:
+    - cron: "15 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-hero-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run sync:hero-data
+        env:
+          STRATZ_TOKEN: ${{ secrets.STRATZ_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPENDOTA_API_KEY: ${{ secrets.OPENDOTA_API_KEY }}

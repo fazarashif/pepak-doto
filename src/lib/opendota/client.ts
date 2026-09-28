@@ -3,6 +3,7 @@ import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
 import { isParsed } from "@/lib/match/analyze";
 import { recordUsage } from "@/lib/usage";
 import type {
+  DurationRow,
   HeroStat,
   ItemConstant,
   ItemTimingRow,
@@ -104,6 +105,12 @@ export const opendota = {
     await invalidate(`od:match:${matchId}`);
     return opendota.match(matchId);
   },
+
+  /** Jumlah game dan menang per durasi (bin 5 menit, detik). */
+  durations: (heroId: number) =>
+    cached(`od:durations:${heroId}`, 12 * HOUR, () =>
+      request<DurationRow[]>(`/heroes/${heroId}/durations`),
+    ),
 
   items: () =>
     cached(

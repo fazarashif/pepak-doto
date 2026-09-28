@@ -241,8 +241,8 @@ Keputusan: D20–D24 di PRD §11.
 
 | # | Tugas | Status |
 |---|---|---|
-| 2.1 | **Sinkron STRATZ harian.** Script `scripts/sync-stratz.ts` mengambil semua data STRATZ (matchup, posisi, build item, winrate per durasi, statistik damage) lalu menulis ke tabel baru di Neon. Query digabung dengan alias GraphQL supaya jumlah request kecil dan tetap di bawah batas STRATZ. Dijalankan GitHub Actions setiap hari, dan bisa dijalankan manual (`npm run sync:stratz`, juga untuk mengisi database lokal) | ⬜ |
-| 2.2 | Draft assistant membaca data hasil sinkron. Kalau belum ada, pakai cadangan OpenDota seperti sekarang | ⬜ |
+| 2.1 | **Sinkron data hero harian.** `scripts/sync-hero-data.ts` mengambil data STRATZ (matchup, posisi, build item, statistik damage) dan winrate per durasi dari OpenDota, lalu menulis ke tabel `hero_data` di Neon. Query digabung dengan alias GraphQL (10 hero per request). Dijalankan GitHub Actions setiap hari (`.github/workflows/sync-hero-data.yml`), dan bisa manual (`npm run sync:hero-data`). Di Vercel aplikasi tidak memanggil STRATZ langsung; di laptop data diambil saat dibutuhkan | ✅ |
+| 2.2 | Draft assistant membaca data hasil sinkron. Kalau belum ada, pakai cadangan OpenDota seperti sekarang | ✅ |
 | 2.3 | `data/hero-traits.json`: sifat yang tidak ada di statistik (ilusi, evasion, ultimate menembus BKB, buff yang bisa di-dispel, summon, silence, mana burn, dll.). Draf dari script (`scripts/draft-hero-traits.ts`, dari deskripsi skill OpenDota), lalu direview. Diberi versi patch | ⬜ |
 | 2.4 | `data/counter-items.json`: ±20 aturan "sifat musuh → item", dibedakan untuk core dan support | ⬜ |
 | 2.5 | `items/advisor.ts`: build inti per fase, item situasional + alasan, target waktu item, penyesuaian ahead/even/behind, item yang sudah dimiliki dicoret. Unit test | ⬜ |
@@ -252,7 +252,7 @@ Keputusan: D20–D24 di PRD §11.
 | 2.9 | Checklist update data per patch di `docs/` | ⬜ |
 | – | Timer manual + pengingat | Ditunda (D22) |
 
-**Yang perlu disiapkan pemilik:** secret `STRATZ_TOKEN` dan `DATABASE_URL` (Neon production) di GitHub repo → Settings → Secrets and variables → Actions. Panduannya akan ditulis di SETUP.md.
+**Yang perlu disiapkan pemilik:** secret `STRATZ_TOKEN` dan `DATABASE_URL` (Neon production) di GitHub. Panduan: [SETUP.md bagian G](SETUP.md#g-sinkron-data-hero-harian-github-actions).
 
 **Perkiraan beban sinkron:** ±127 hero × rata-rata 2 posisi × 4 bracket untuk data item, ditambah 508 query matchup. Dengan alias GraphQL jadi ratusan request per hari, jauh di bawah batas STRATZ 15.000/hari. Datanya diringkas sebelum disimpan (beberapa MB), aman untuk batas 0,5 GB Neon.
 
