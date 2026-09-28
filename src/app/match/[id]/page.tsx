@@ -69,7 +69,7 @@ export default async function MatchReportPage({ params, searchParams }: PageProp
   return (
     <div className="mx-auto grid max-w-5xl gap-8 px-4 pt-10 sm:px-6">
       <ReportView report={report} heroes={heroes} />
-      {!report.parsed ? <ParsePanel matchId={match.match_id} /> : null}
+      {!report.parsed ? <ParsePanel matchId={match.match_id} startTime={match.start_time} /> : null}
     </div>
   );
 }
