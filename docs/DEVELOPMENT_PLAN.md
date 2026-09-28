@@ -214,7 +214,7 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 | 1.2 | Sumber data: STRATZ (utama), OpenDota (cadangan) | ✅ (`draft/data.ts`) |
 | 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | ⬜ Belum perlu: cache DB 12–24 jam sudah cukup |
 | 1.4 | `POST /api/draft` + halaman `/draft` | ✅ |
-| 1.5 | Unit test engine + script backtest | ✅ test, ⬜ backtest |
+| 1.5 | Unit test engine + script backtest | ✅ (`npm run backtest`, hasil di PROGRESS.md) |
 | 1.6 | `match/analyze.ts`: nilai, laning, kematian, waktu item, vision, prioritas perbaikan. **Turbo ditolak** | ✅ |
 | 1.7 | Match (detail, parse, recent tanpa Turbo) + halaman `/match` dan `/match/[id]` | ✅ (server component + server action, tanpa API terpisah) |
 | 1.8 | Unit test analyzer + smoke test E2E | ✅ test, ⬜ E2E |
@@ -262,10 +262,10 @@ synergy(c)   = rata-rata atas kawan a: synergy(c dengan a)    ← STRATZ
 meta(c)      = winrate_halus(c di bracket) − 50%
 pool(c)      = 0,5 × (winrate_pribadi_halus − 50%) + 2% × min(1, game/30)
 komposisi(c) = +1% per kebutuhan tim yang diisi
-skor         = 1,0·counter + 0,6·synergy + 0,7·meta + komposisi + pool
+skor         = 1,0·counter + 0,2·synergy + 0,5·meta + komposisi + pool
 ```
 - *winrate_halus* = (menang + k·50%) / (game + k), supaya sampel kecil tidak ekstrem.
-- Bobot dikalibrasi dengan backtest.
+- Bobot dikalibrasi dengan backtest (3.899 match, lihat PROGRESS.md). Awalnya 1 / 0,6 / 0,7.
 - **Nilai post-match:** A ≥ persentil 75, B ≥ 50, C ≥ 25, D < 25. Persentil kematian dari OpenDota sudah "makin tinggi makin baik", jadi **tidak** dibalik.
 - **Meta dan filter posisi** memakai data STRATZ per posisi per bracket. Hero dengan < 10% game di posisi yang dipilih disembunyikan.
 - **Waktu item** hanya dibandingkan dengan bucket yang lebih cepat dari waktu pemain.
