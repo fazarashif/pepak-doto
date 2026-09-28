@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { count } from "drizzle-orm";
 import { CheckCircle, MinusCircle, WarningCircle } from "@phosphor-icons/react/ssr";
 import { getCurrentUser, isAdmin, isAuthConfigured } from "@/lib/auth/session";
+import { cn } from "@/lib/cn";
 import { getDb, schema } from "@/lib/db";
 import { getSyncStatus } from "@/lib/hero-data/store";
 import type { SyncStatus } from "@/lib/hero-data/write";
@@ -233,30 +235,33 @@ function LlmUsageTable({ rows }: { rows: Awaited<ReturnType<typeof llmUsageRepor
           </thead>
           <tbody className="font-mono tabular-nums">
             {rows.map((r) => (
-              <tr
-                key={`${r.day}-${r.provider}-${r.model}-${r.feature}`}
-                className="border-t border-border"
-              >
-                <td className="px-3 py-2">{r.day}</td>
-                <td className="px-3 py-2 font-sans">{r.model}</td>
-                <td className="px-3 py-2 font-sans">{r.feature}</td>
-                <td className="px-3 py-2 text-right">{r.requests}</td>
-                <td className="px-3 py-2 text-right" title={r.lastError ?? undefined}>
-                  {r.failures}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {r.inputTokens.toLocaleString("en-US")}/{r.outputTokens.toLocaleString("en-US")}
-                </td>
-                <td className="px-3 py-2 text-right">${r.costUsd.toFixed(3)}</td>
-              </tr>
+              <Fragment key={`${r.day}-${r.provider}-${r.model}-${r.feature}`}>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2">{r.day}</td>
+                  <td className="px-3 py-2 font-sans">{r.model}</td>
+                  <td className="px-3 py-2 font-sans">{r.feature}</td>
+                  <td className="px-3 py-2 text-right">{r.requests}</td>
+                  <td className={cn("px-3 py-2 text-right", r.failures && "text-danger")}>
+                    {r.failures}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {r.inputTokens.toLocaleString("en-US")}/{r.outputTokens.toLocaleString("en-US")}
+                  </td>
+                  <td className="px-3 py-2 text-right">${r.costUsd.toFixed(3)}</td>
+                </tr>
+                {r.failures && r.lastError ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 pb-2 font-sans text-xs break-words text-danger">
+                      Last error: {r.lastError}
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-muted">
-        Estimated cost over 7 days: ${total.toFixed(2)}. Hover the failed count to see the last
-        error.
-      </p>
+      <p className="text-xs text-muted">Estimated cost over 7 days: ${total.toFixed(2)}.</p>
     </div>
   );
 }

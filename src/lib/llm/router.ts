@@ -174,7 +174,10 @@ export async function generateNarrative<T>(
       if (!json) return { error: "Answer was not JSON" };
       return spec.parse(json);
     },
-    onAttempt: (a) => recordUsage(spec.kind, a),
+    onAttempt: (a) => {
+      if (!a.ok) console.warn(`[llm] ${spec.kind} ${a.provider}/${a.model} failed: ${a.error}`);
+      return recordUsage(spec.kind, a);
+    },
   });
   if (!result) return template("failed");
 

@@ -61,6 +61,17 @@ export function CoachFrame<T>({
             </p>
           ) : null}
           {render(result.content)}
+          {!result.by && signedIn ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-fit"
+              onClick={ask}
+              disabled={pending}
+            >
+              {pending ? "Trying..." : "Try again"}
+            </Button>
+          ) : null}
           <p className="text-xs text-muted">
             {result.by
               ? `Written by ${result.by} from the numbers on this page. It can still get things wrong.`
