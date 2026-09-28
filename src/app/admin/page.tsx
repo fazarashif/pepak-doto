@@ -6,7 +6,10 @@ import { getCurrentUser, isAdmin, isAuthConfigured } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db";
 import { getSyncStatus } from "@/lib/hero-data/store";
 import type { SyncStatus } from "@/lib/hero-data/write";
+import { PROVIDERS } from "@/lib/llm/providers";
+import { getLlmSettings, llmUsageReport, narrativesToday } from "@/lib/llm/router";
 import { isStratzConfigured } from "@/lib/stratz/client";
+import { LlmSettingsForm } from "./llm-settings-form";
 import { recentUsage } from "@/lib/usage";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
@@ -27,12 +30,17 @@ export default async function AdminPage() {
   let dbError: string | null = null;
   let usage: Awaited<ReturnType<typeof recentUsage>> = [];
   let sync: SyncStatus | null = null;
+  let llmUsage: Awaited<ReturnType<typeof llmUsageReport>> = [];
+  let notesToday = 0;
+  const llmSettings = await getLlmSettings();
   try {
     const db = await getDb();
     const [row] = await db.select({ n: count() }).from(schema.users);
     userCount = row.n;
     usage = await recentUsage(7);
     sync = await getSyncStatus();
+    llmUsage = await llmUsageReport(7);
+    notesToday = await narrativesToday();
   } catch (err) {
     dbError = err instanceof Error ? err.message : "Unknown error";
   }
@@ -46,6 +54,14 @@ export default async function AdminPage() {
     const left = row.remaining != null ? `, ${row.remaining.toLocaleString("en-US")} left` : "";
     return `${row.requests} requests today${left}.`;
   };
+
+  const providerOptions = Object.values(PROVIDERS).map((p) => ({
+    id: p.id,
+    label: p.label,
+    envVar: p.envVar,
+    configured: p.isConfigured(),
+    models: p.models.map((m) => ({ id: m.id, label: m.label })),
+  }));
 
   const services: ServiceRow[] = [
     {
@@ -76,7 +92,7 @@ export default async function AdminPage() {
         ? "SESSION_SECRET is set."
         : "SESSION_SECRET is missing or too short.",
     },
-    { name: "LLM providers", status: "off", detail: "Configured in stage 4." },
+    llmRow(llmSettings.enabled, notesToday, llmSettings.globalPerDay),
   ];
 
   return (
@@ -98,6 +114,32 @@ export default async function AdminPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="llm" className="grid gap-3">
+        <div className="grid gap-1">
+          <h2 id="llm" className="font-display text-lg font-bold">
+            Coaching notes (LLM)
+          </h2>
+          <p className="text-sm text-muted">
+            API keys live in the environment variables; set them in Vercel and redeploy.
+          </p>
+        </div>
+        <ul className="grid gap-2 sm:grid-cols-3">
+          {providerOptions.map((p) => (
+            <li key={p.id} className="flex gap-3 rounded-lg border border-border bg-surface p-3">
+              <StatusIcon status={p.configured ? "ok" : "off"} />
+              <div className="grid min-w-0 gap-0.5">
+                <p className="text-sm font-medium">{p.label}</p>
+                <p className="font-mono text-xs break-words text-muted">
+                  {p.envVar} {p.configured ? "set" : "not set"}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <LlmSettingsForm settings={llmSettings} providers={providerOptions} />
+        <LlmUsageTable rows={llmUsage} />
       </section>
 
       <section aria-labelledby="usage" className="grid gap-3">
@@ -139,6 +181,82 @@ export default async function AdminPage() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function llmRow(enabled: boolean, today: number, limit: number): ServiceRow {
+  const configured = Object.values(PROVIDERS).filter((p) => p.isConfigured());
+  return {
+    name: "Coaching notes",
+    status: !enabled || !configured.length ? "off" : "ok",
+    detail: !enabled
+      ? "Turned off. Players get the plain version."
+      : configured.length
+        ? `${configured.map((p) => p.label).join(", ")}. ${today} of ${limit} new notes today.`
+        : "No API key set yet. Players get the plain version.",
+  };
+}
+
+function LlmUsageTable({ rows }: { rows: Awaited<ReturnType<typeof llmUsageReport>> }) {
+  if (!rows.length)
+    return <p className="text-sm text-muted">No coaching notes requested in the last 7 days.</p>;
+  const total = rows.reduce((s, r) => s + r.costUsd, 0);
+  return (
+    <div className="grid gap-2">
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-surface-2 text-left text-muted">
+            <tr>
+              <th scope="col" className="px-3 py-2 font-medium">
+                Day
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                Model
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                Feature
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                Requests
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                Failed
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                Tokens in/out
+              </th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">
+                Cost
+              </th>
+            </tr>
+          </thead>
+          <tbody className="font-mono tabular-nums">
+            {rows.map((r) => (
+              <tr
+                key={`${r.day}-${r.provider}-${r.model}-${r.feature}`}
+                className="border-t border-border"
+              >
+                <td className="px-3 py-2">{r.day}</td>
+                <td className="px-3 py-2 font-sans">{r.model}</td>
+                <td className="px-3 py-2 font-sans">{r.feature}</td>
+                <td className="px-3 py-2 text-right">{r.requests}</td>
+                <td className="px-3 py-2 text-right" title={r.lastError ?? undefined}>
+                  {r.failures}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {r.inputTokens.toLocaleString("en-US")}/{r.outputTokens.toLocaleString("en-US")}
+                </td>
+                <td className="px-3 py-2 text-right">${r.costUsd.toFixed(3)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-muted">
+        Estimated cost over 7 days: ${total.toFixed(2)}. Hover the failed count to see the last
+        error.
+      </p>
     </div>
   );
 }
