@@ -24,8 +24,19 @@ export async function upsertUserFromSteam(profile: SteamProfile) {
   return user;
 }
 
+/** Hapus user beserta datanya. Target latihan ikut terhapus lewat foreign key. */
 export async function deleteUser(userId: string) {
   const db = await getDb();
+  const [user] = await db
+    .select({ accountId: schema.users.accountId })
+    .from(schema.users)
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+  if (user) {
+    await db
+      .delete(schema.matchSummaries)
+      .where(eq(schema.matchSummaries.accountId, user.accountId));
+  }
   await db.delete(schema.users).where(eq(schema.users.id, userId));
 }
 

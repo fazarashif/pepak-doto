@@ -1,6 +1,8 @@
 import {
   bigint,
+  boolean,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -79,4 +81,51 @@ export const heroData = pgTable(
   (t) => [primaryKey({ columns: [t.kind, t.bracket, t.heroId, t.position] })],
 );
 
+/**
+ * Ringkasan match pemain yang login (lihat src/lib/players/summary.ts untuk isi `data`).
+ * Dipakai target latihan dan parse otomatis. Akun lain hanya di-cache, tidak disimpan di sini.
+ */
+export const matchSummaries = pgTable(
+  "match_summaries",
+  {
+    accountId: bigint("account_id", { mode: "number" }).notNull(),
+    matchId: bigint("match_id", { mode: "number" }).notNull(),
+    startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+    heroId: smallint("hero_id").notNull(),
+    parsed: boolean("parsed").notNull().default(false),
+    /** Sudah dicoba ambil statistik replay (LH@10, ward) dari detail match. */
+    replayChecked: boolean("replay_checked").notNull().default(false),
+    parseRequestedAt: timestamp("parse_requested_at", { withTimezone: true }),
+    data: jsonb("data").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.accountId, t.matchId] }),
+    index("match_summaries_account_time_idx").on(t.accountId, t.startTime),
+  ],
+);
+
+/** Target latihan buatan user. Progres dihitung dari match_summaries setelah target dibuat. */
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    metric: text("metric").notNull(),
+    /** "atLeast" (≥) atau "atMost" (≤). */
+    direction: text("direction").notNull(),
+    target: doublePrecision("target").notNull(),
+    /** Jumlah game yang harus mencapai target. */
+    games: smallint("games").notNull(),
+    /** Opsional: hanya hitung match dengan hero ini. */
+    heroId: smallint("hero_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+  },
+  (t) => [index("goals_user_idx").on(t.userId)],
+);
+
 export type User = typeof users.$inferSelect;
+export type Goal = typeof goals.$inferSelect;
