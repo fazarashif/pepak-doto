@@ -3,13 +3,18 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.3 (2026-09-27) |
+| Versi | 0.4 (2026-09-28) |
 | Pemilik | Faza |
 | Dokumen terkait | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [PROGRESS.md](PROGRESS.md) |
 
 > **Filosofi nama.** *"Pepak"* dalam bahasa Jawa berarti lengkap atau menyeluruh. Pepak Doto membantu pemain memahami Dota lebih dalam: tidak hanya bermain, tetapi belajar dari gameplay, mengenali kesalahan, memahami pola, dan terus berkembang.
 
 **Riwayat perubahan**
+- **0.4:**
+  - Rincian F3 (Game Plan di `/live`) dan F4 (cheat sheet) untuk Tahap 2.
+  - Data item, durasi, dan tipe damage diambil dari STRATZ per posisi per bracket.
+  - Data STRATZ disinkron harian lewat GitHub Actions ke Neon karena token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.
+  - Timer manual ditunda; tips cheat sheet menunggu LLM di Tahap 4.
 - **0.3:**
   - Hanya LLM gratis (tanpa billing), tetap bisa diatur admin.
   - Batas narasi 10 per user dan 200 total per hari.
@@ -143,29 +148,38 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
   - Match privat atau tidak ditemukan menampilkan pesan yang jelas.
   - Match yang sama tidak di-fetch ulang (cache).
 
-### F3: Live Match Assistant (input manual)
+### F3: Live Match Assistant / Game Plan (input manual, `/live`)
 **User story:** *Setelah draft selesai, saya ingin tahu item apa yang harus dibeli melawan musuh ini dan rencana main tim saya.*
 
+- **Halaman terpisah** `/live`. Di halaman draft ada tombol **"Start game plan"** yang membawa 10 hero, hero, posisi, dan rank lewat URL. `/live` juga bisa diisi manual tanpa lewat draft.
+- **Dirancang untuk HP atau layar kedua:** satu kolom, bagian terpenting (item berikutnya) di atas, dan tidak ada yang berat di browser.
 - **Input:**
-  - 10 hero (otomatis dari F1), hero dan posisi saya
-  - kondisi game: ahead / even / behind
-  - opsional: item yang dimiliki, menit sekarang
+  - 10 hero, hero dan posisi saya, bracket
+  - kondisi game: ahead / even / behind (default: even)
+  - opsional: item yang sudah dimiliki (item ini dicoret dari saran), menit sekarang (fase yang sedang berjalan disorot)
 - **Output:**
-  - build inti per fase
-  - item situasional berdasarkan musuh, dengan alasan
-  - target waktu item beserta winrate-nya
-  - rencana permainan: kapan tim paling kuat, gaya tim, skill musuh yang perlu diwaspadai
-  - opsional: timer manual + pengingat event
-- **Catatan:** data sifat hero (evasion, ilusi, heal, dan lain-lain) **tidak tersedia dari API**. Disusun sebagai file data sendiri dan diperbarui setiap patch besar.
+  - **Build inti per fase** (start, early, mid, late), termasuk boots, dari data pembelian STRATZ untuk hero + posisi + bracket. Tiap item diberi waktu beli yang umum.
+  - **Item situasional melawan musuh ini, dengan alasan tertulis.** Contoh: "Monkey King Bar: Phantom Assassin punya evasion." Saran untuk support dan core dibedakan.
+  - **Target waktu item** beserta winrate-nya.
+  - **Rencana permainan:**
+    - kurva kekuatan kedua tim menurut durasi game, lalu kesimpulan sederhana (mis. "Tim Anda lebih kuat sebelum menit 30. Cari fight dan objektif lebih awal.")
+    - komposisi damage musuh (physical / magic / pure) dan pengaruhnya ke item bertahan
+    - skill musuh yang perlu diwaspadai: ultimate, disable panjang, skill yang menembus BKB
+  - **Kondisi game mengubah penekanan:**
+    - *Behind:* item bertahan dan item murah didahulukan, plus saran bermain lebih aman.
+    - *Ahead:* item untuk menekan dan menutup game didahulukan.
+    - *Even:* urutan standar.
+- **Ditunda:** timer manual + pengingat event (rune, Roshan, Tormentor, siang/malam). Game sudah punya timer bawaan, jadi nilai tambahnya kecil.
+- **Catatan:** sifat khusus hero (ilusi, evasion, ultimate yang menembus BKB, buff yang bisa di-dispel, summon, dan lain-lain) **tidak tersedia dari API**. Disusun sebagai file data sendiri (draf dibuat script dari deskripsi skill, lalu direview), dan diperbarui setiap patch besar. Hal yang bisa diukur (tipe damage, stun, heal, invisible) diambil dari statistik STRATZ.
 
-### F4: Cheat sheet "how to play against hero X"
+### F4: Cheat sheet "how to play against hero X" (`/heroes/[id]`)
 - Pilih hero, lalu tampil:
-  - hero yang meng-counter hero tersebut
-  - item counter
+  - hero yang meng-counter hero tersebut, per bracket
+  - item counter beserta alasannya (dari aturan yang sama dengan F3)
   - skill berbahaya
-  - kapan hero tersebut paling kuat
-  - tips singkat
-- Teks tips dibuat dengan LLM di Tahap 4, disimpan per patch.
+  - kapan hero tersebut paling kuat (kurva winrate menurut durasi game)
+  - build yang biasa dipakai hero tersebut, supaya tahu kapan item pentingnya jadi
+- **Tahap 2 hanya menampilkan data.** Tips tertulis dibuat dengan LLM di Tahap 4 dan disimpan per patch.
 
 ### F5: Tren performa
 - Dari 20–50 match terakhir **(tanpa Turbo)**: grafik persentil GPM/XPM/LH, kematian, dan winrate per hero, posisi, dan durasi.
@@ -263,7 +277,9 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | Statistik hero per bracket, peran | OpenDota `/heroStats` | Terverifikasi |
 | Matchup cadangan | OpenDota `/heroes/{id}/matchups` | Hanya match pro, sampel kecil |
 | Peran lane hero | OpenDota `/scenarios/laneRoles` / STRATZ | – |
-| Item populer, waktu beli item, winrate per durasi | OpenDota | Terverifikasi |
+| Build item per posisi per bracket (full, starting, boots) | **STRATZ** `itemFullPurchase`, `itemStartingPurchase`, `itemBootPurchase` | Terverifikasi 2026-09-28 |
+| Winrate per durasi game, tipe damage, stun, heal, invisible | **STRATZ** `heroStats.stats` | Terverifikasi 2026-09-28 |
+| Item populer, waktu beli item, winrate per durasi (cadangan) | OpenDota | Terverifikasi |
 | Match, benchmarks, parse replay | OpenDota | Terverifikasi |
 | Profil Steam (nama, avatar) | OpenDota `/players/{id}`; Steam Web API opsional | Terverifikasi |
 | Konstanta (hero, item, skill) | OpenDota `/constants/*` (dotaconstants) | Terverifikasi |
@@ -275,6 +291,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
 | Kuota atau token STRATZ bermasalah | Draft kurang akurat | Cadangan otomatis ke OpenDota. Token diperpanjang tahunan (lihat checklist) |
+| Token STRATZ hanya boleh dipakai dari **2 IP per 15 menit**, sedangkan IP server Vercel berganti-ganti | Request dari Vercel ditolak, draft jatuh ke data cadangan | Sinkron harian lewat GitHub Actions (satu IP) ke Neon. Website hanya membaca Neon |
 | Kuota OpenDota habis saat user bertambah | Fitur berhenti | Cache di DB, refresh meta terjadwal. API key berbayar kalau perlu |
 | Kuota LLM gratis habis atau kebijakannya berubah | Narasi tidak tampil | Beberapa provider cadangan, batas harian di F11, teks template sebagai pilihan terakhir |
 | Free tier Gemini boleh dipakai Google untuk melatih model | Isi prompt terlihat oleh Google | Prompt hanya berisi statistik match (tanpa nama atau ID pemain). Disebutkan di Privacy Policy |
@@ -307,6 +324,11 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D17 | Database | Neon Postgres (justifikasi di DEVELOPMENT_PLAN §2.1) |
 | D18 | Analytics | Vercel Web Analytics (tanpa cookie) |
 | D19 | Steam Web API key | Tidak wajib; profil dari OpenDota |
+| D20 | Game Plan | Halaman terpisah `/live`, diisi dari draft lewat tombol "Start game plan" atau manual |
+| D21 | Sifat hero | Draf dari script, semua hero direview saat development, pemilik cek sampel (mis. 10 hero yang sering dimainkan) |
+| D22 | Timer manual | Ditunda |
+| D23 | Tips cheat sheet | Data saja di Tahap 2; tips tertulis dari LLM di Tahap 4 |
+| D24 | Sinkron STRATZ | GitHub Actions harian menulis ke Neon; secret `STRATZ_TOKEN` dan `DATABASE_URL` di GitHub |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).

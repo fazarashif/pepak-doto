@@ -3,8 +3,12 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.3 (2026-09-27) |
+| Versi | 0.4 (2026-09-28) |
 | Terkait | [PRD.md](PRD.md), [PROGRESS.md](PROGRESS.md) |
+
+**Perubahan di 0.4:**
+- Rincian Tahap 2 (§7), termasuk sinkron STRATZ harian lewat GitHub Actions.
+- Bobot skor draft dari hasil backtest (§8).
 
 **Perubahan di 0.3:**
 - LLM hanya dari provider gratis.
@@ -107,6 +111,8 @@ flowchart LR
   A --> SW[(Steam OpenID)]
   S --> LR[LLM router] --> L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
   CR[Vercel Cron harian] --> D
+  GA[GitHub Actions harian<br/>sync STRATZ] --> ST
+  GA --> DB
   AD[Admin panel] --> R
 ```
 
@@ -212,7 +218,7 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 |---|---|---|
 | 1.1 | `draft/engine.ts`: counter + synergy (STRATZ), meta, hero pool, komposisi, posisi, ban, peringatan. Rumus di §8 | ✅ |
 | 1.2 | Sumber data: STRATZ (utama), OpenDota (cadangan) | ✅ (`draft/data.ts`) |
-| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | ⬜ Belum perlu: cache DB 12–24 jam sudah cukup |
+| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | Dipindah ke Tahap 2.1 (GitHub Actions), karena batas IP STRATZ |
 | 1.4 | `POST /api/draft` + halaman `/draft` | ✅ |
 | 1.5 | Unit test engine + script backtest | ✅ (`npm run backtest`, hasil di PROGRESS.md) |
 | 1.6 | `match/analyze.ts`: nilai, laning, kematian, waktu item, vision, prioritas perbaikan. **Turbo ditolak** | ✅ |
@@ -220,16 +226,26 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 | 1.8 | Unit test analyzer + smoke test E2E | ✅ test, ⬜ E2E |
 
 ### Tahap 2: In-game
-| # | Tugas |
-|---|---|
-| 2.1 | `data/hero-traits.json` (draf dari script, review manual) |
-| 2.2 | `data/counter-items.json` |
-| 2.3 | `items/advisor.ts`: build inti, item situasional, target waktu item |
-| 2.4 | Rencana permainan (kurva winrate per durasi, gaya tim) |
-| 2.5 | Halaman `/live`, hero dibawa dari draft |
-| 2.6 | (Opsional) timer manual + pengingat |
-| 2.7 | Cheat sheet `/heroes/[id]` |
-| 2.8 | Checklist update data per patch |
+Keputusan: D20–D24 di PRD §11.
+
+| # | Tugas | Status |
+|---|---|---|
+| 2.1 | **Sinkron STRATZ harian.** Script `scripts/sync-stratz.ts` mengambil semua data STRATZ (matchup, posisi, build item, winrate per durasi, statistik damage) lalu menulis ke tabel baru di Neon. Query digabung dengan alias GraphQL supaya jumlah request kecil dan tetap di bawah batas STRATZ. Dijalankan GitHub Actions setiap hari, dan bisa dijalankan manual (`npm run sync:stratz`, juga untuk mengisi database lokal) | ⬜ |
+| 2.2 | Draft assistant membaca data hasil sinkron. Kalau belum ada, pakai cadangan OpenDota seperti sekarang | ⬜ |
+| 2.3 | `data/hero-traits.json`: sifat yang tidak ada di statistik (ilusi, evasion, ultimate menembus BKB, buff yang bisa di-dispel, summon, silence, mana burn, dll.). Draf dari script (`scripts/draft-hero-traits.ts`, dari deskripsi skill OpenDota), lalu direview. Diberi versi patch | ⬜ |
+| 2.4 | `data/counter-items.json`: ±20 aturan "sifat musuh → item", dibedakan untuk core dan support | ⬜ |
+| 2.5 | `items/advisor.ts`: build inti per fase, item situasional + alasan, target waktu item, penyesuaian ahead/even/behind, item yang sudah dimiliki dicoret. Unit test | ⬜ |
+| 2.6 | `plan/game-plan.ts`: kurva kekuatan tim per durasi, komposisi damage musuh, skill berbahaya. Unit test | ⬜ |
+| 2.7 | Halaman `/live` (mobile-first) + tombol "Start game plan" di `/draft` | ⬜ |
+| 2.8 | Cheat sheet `/heroes/[id]` (data saja) | ⬜ |
+| 2.9 | Checklist update data per patch di `docs/` | ⬜ |
+| – | Timer manual + pengingat | Ditunda (D22) |
+
+**Yang perlu disiapkan pemilik:** secret `STRATZ_TOKEN` dan `DATABASE_URL` (Neon production) di GitHub repo → Settings → Secrets and variables → Actions. Panduannya akan ditulis di SETUP.md.
+
+**Perkiraan beban sinkron:** ±127 hero × rata-rata 2 posisi × 4 bracket untuk data item, ditambah 508 query matchup. Dengan alias GraphQL jadi ratusan request per hari, jauh di bawah batas STRATZ 15.000/hari. Datanya diringkas sebelum disimpan (beberapa MB), aman untuk batas 0,5 GB Neon.
+
+**Selesai bila:** dari draft yang lengkap, `/live` menampilkan build, item situasional dengan alasan, dan rencana permainan di HP tanpa memanggil STRATZ langsung; cheat sheet tampil untuk semua hero; sinkron harian berjalan di GitHub Actions.
 
 ### Tahap 3: Profil pemain
 | # | Tugas |

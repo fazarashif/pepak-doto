@@ -5,7 +5,8 @@
 ## Status saat ini (2026-09-28)
 
 - **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
-- **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer ada di branch `feat/stage-1`, menunggu review PR.
+- **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer sudah di-merge (PR #3 dan #4). Smoke test E2E ditunda atas keputusan pemilik.
+- **Tahap 2 (In-game):** rencana sudah dibahas (PRD 0.4, DEVELOPMENT_PLAN §7), menunggu review sebelum coding. Branch `feat/stage-2`.
 
 ## Tahap 1: yang sudah dikerjakan
 
@@ -68,7 +69,11 @@ Kesimpulan:
 - Hasil lengkap tersimpan di `.data/backtest/last-result.json` (lokal, tidak di-commit). Jalankan ulang setiap ada patch besar.
 
 ## Belum dikerjakan dari Tahap 1
-- **Smoke test E2E dengan Playwright** (tugas 1.8).
+- **Smoke test E2E dengan Playwright** (tugas 1.8). Ditunda.
+
+## Temuan saat merencanakan Tahap 2
+- **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).
+- STRATZ punya data pembelian item per menit (`itemFullPurchase`), starting items, boots, winrate per durasi (`stats` dengan `groupByTime`), dan rata-rata damage physical/magic/pure, stun, heal, serta invisible per hero. Semua per posisi per bracket.
 
 ## Catatan lain
 - Node 20.18 masih jalan; upgrade ke 22 tetap disarankan.
