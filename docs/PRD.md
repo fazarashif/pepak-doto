@@ -3,13 +3,16 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.5 (2026-09-28) |
+| Versi | 0.6 (2026-09-28) |
 | Pemilik | Faza |
 | Dokumen terkait | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [PROGRESS.md](PROGRESS.md) |
 
 > **Filosofi nama.** *"Pepak"* dalam bahasa Jawa berarti lengkap atau menyeluruh. Pepak Doto membantu pemain memahami Dota lebih dalam: tidak hanya bermain, tetapi belajar dari gameplay, mengenali kesalahan, memahami pola, dan terus berkembang.
 
 **Riwayat perubahan**
+- **0.6:**
+  - Rincian F9 (narasi coaching) untuk Tahap 4 (keputusan D30–D33).
+  - Game time di Game Plan menampilkan item inti berikutnya dan keadaan "saat ini".
 - **0.5:**
   - Rincian F5–F8 untuk Tahap 3 (keputusan D26–D29).
   - Profil bisa dilihat siapa saja lewat account ID; target latihan tetap butuh login.
@@ -234,10 +237,17 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 - Kalau match yang di-parse masih sedikit, tampil catatan jumlah match yang dipakai.
 
 ### F9: Narasi coaching dengan LLM
-- Mengubah hasil F2, F5, dan F4 menjadi paragraf saran.
-- LLM **hanya menerima fakta terstruktur** dan tidak boleh menambah fakta baru.
-- **Model yang dipakai dipilih admin** lewat F11. Kalau semua provider gagal, dipakai teks template.
-- Hasil disimpan per match per pemain.
+- **Tiga tempat (D30):**
+  - **Match review:** "Coach's notes", yaitu 1–2 paragraf yang menjelaskan prioritas perbaikan dan hal yang sudah bagus dengan bahasa natural. Disimpan per match per pemain.
+  - **Tren di profil pemain:** ringkasan pola dan persentil dari 20/50 match terakhir, ditutup satu saran latihan yang bisa langsung dijadikan target. Disimpan per akun, dan dibuat ulang kalau ada match baru.
+  - **Tips cheat sheet hero:** 3–5 tips "cara melawan hero X" dari data counter, item, skill berbahaya, dan kurva kekuatan. Disimpan per hero per kelompok rank per patch, lalu dibaca semua orang.
+- **Dibuat lewat tombol** ("Get coaching notes" / "Get tips"), bukan otomatis (D31). Narasi yang sudah ada langsung tampil tanpa tombol.
+- **Membuat narasi baru butuh login** (D32). Tamu tetap bisa membaca narasi yang sudah tersimpan, misalnya tips cheat sheet.
+- **Batas:** narasi dari cache tidak dihitung. Narasi baru masuk ke batas 10 per user per hari dan 200 total per hari.
+- LLM **hanya menerima fakta terstruktur** dan tidak boleh menambah fakta baru. Prompt tidak berisi nama pemain, Steam ID, atau match ID.
+- **Pemeriksaan otomatis:** narasi yang menyebut hero atau item di luar data yang diberikan ditolak. Router lalu mencoba provider berikutnya, dan terakhir memakai teks template.
+- Bahasa narasi: Inggris, sama dengan UI.
+- **Model dipilih admin** lewat F11. Kalau semua provider gagal, dipakai teks template.
 
 ### F10: Auto-input via GSI (ditunda)
 - Ditunda karena kekhawatiran aplikasi jadi berat. Didiskusikan setelah Tahap 3.
@@ -248,7 +258,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 - **Akses:** awalnya hanya pemilik aplikasi. Steam ID admin disimpan di environment variable, bukan di UI.
 - **Pengaturan LLM:**
   - **Default: Claude Haiku 4.5** (Anthropic API, berbayar per pemakaian). Admin bisa memilih model Claude lain, mis. Claude Sonnet 5 kalau butuh kualitas lebih.
-  - **Pilihan gratis** tetap tersedia dan bisa dijadikan utama atau cadangan: **Google Gemini** (free tier Flash / Flash-Lite), **Groq**, **OpenRouter** (model `:free`), dan **provider lain yang kompatibel dengan format OpenAI**, misalnya Cerebras atau Mistral.
+  - **Pilihan gratis** tetap tersedia dan bisa dijadikan utama atau cadangan: **Google Gemini** (free tier Flash / Flash-Lite), **Groq**, **OpenRouter** (model `:free`), dan **provider lain yang kompatibel dengan format OpenAI**, misalnya Cerebras atau Mistral. Yang disiapkan di Tahap 4: **Gemini dan OpenRouter** (D33).
   - Kalau Claude error atau batas belanja tercapai, router otomatis pindah ke cadangan gratis.
   - API key disimpan di **environment variable Vercel**; UI hanya menampilkan status "configured".
   - Provider hanya tampil aktif kalau API key-nya sudah diisi di server.
@@ -372,6 +382,10 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D27 | Akses profil | Siapa saja bisa melihat profil akun publik lewat account ID (`/players/[id]`); target latihan butuh login |
 | D28 | Target latihan | Bebas: metrik (dari daftar), arah, angka, jumlah game |
 | D29 | Jumlah match tren | 50 terakhir (bisa 20), tanpa Turbo |
+| D30 | Tempat narasi LLM | Match review, tren profil pemain, tips cheat sheet hero |
+| D31 | Pemicu narasi | Tombol di halaman; narasi tersimpan tampil langsung |
+| D32 | Membuat narasi | Hanya user yang login; tamu bisa membaca yang tersimpan |
+| D33 | LLM cadangan | Gemini dan OpenRouter (free tier), setelah Claude |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).
