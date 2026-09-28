@@ -99,6 +99,12 @@ export const opendota = {
     return request<{ job?: { jobId: number } }>(`/request/${matchId}`, { method: "POST" });
   },
 
+  /** Ambil ulang match tanpa cache, untuk mengecek apakah parse sudah selesai. */
+  refreshMatch: async (matchId: number) => {
+    await invalidate(`od:match:${matchId}`);
+    return opendota.match(matchId);
+  },
+
   items: () =>
     cached(
       "od:const:items",

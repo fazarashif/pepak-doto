@@ -48,6 +48,7 @@ Useful scripts:
 | `npm run lint` | Run ESLint |
 | `npm run db:generate` | Create a migration after changing `src/lib/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to the database in `DATABASE_URL` |
+| `npm run backtest` | Check the draft scores against recent public matches (needs `STRATZ_TOKEN`) |
 
 ## Built with
 

@@ -31,7 +31,11 @@
   - waktu beli item inti
   - vision
 - **Ringkasan:** maksimal 3 prioritas perbaikan beserta tips, dan hal yang sudah bagus.
-- **Tombol "Parse replay":** halaman mengecek ulang setiap 10 detik, maksimal 5 menit.
+- **Tombol "Parse replay":**
+  - Setelah diminta, halaman mengecek OpenDota setiap 30 detik (tanpa cache) selama maksimal 30 menit, lalu refresh sendiri begitu replay selesai.
+  - Status menunggu disimpan di sessionStorage, jadi tetap ada setelah halaman di-refresh.
+  - Match yang lebih tua dari 14 hari diberi catatan bahwa replay-nya mungkin sudah dihapus Valve.
+  - Tanpa API key, OpenDota menaruh permintaan di antrean prioritas rendah (priority -2). Saat dites 2026-09-28, dua match baru belum selesai setelah 15 menit lebih. Jadi parse lambat itu sifat antrean OpenDota, bukan bug di aplikasi.
 - Match Turbo, match tidak ditemukan, dan data privat masing-masing punya pesan dan ilustrasi sendiri.
 
 ### Test
@@ -44,8 +48,26 @@
 - **Peran pemain** di match yang belum di-parse ditebak dari last hit per menit (< 2 = support). Support tidak diberi saran farming.
 - **Tanda matchup STRATZ:** `vs.synergy` positif berarti hero pertama unggul. Nilainya hampir simetris dan berkorelasi 0,74 dengan winrate. Nilai dihaluskan berdasarkan jumlah match (k = 300).
 
+## Backtest skor draft (`npm run backtest`)
+Data: 3.899 match All Pick publik (≈1.000 per kelompok rank, durasi ≥ 15 menit), dievaluasi dengan 5-fold cross-validation. Margin error ±1,6 poin.
+
+| Metode | Akurasi | AUC |
+|---|---|---|
+| Selalu tebak Radiant | 51,7% | 0,50 |
+| Counter saja | 53,4% | – |
+| Synergy saja | 51,4% | – |
+| Meta saja | 55,0% | – |
+| Bobot lama 1 / 0,6 / 0,7 | 55,9% | 0,588 |
+| **Bobot baru 1 / 0,2 / 0,5** | **56,3%** | **0,591** |
+
+Kesimpulan:
+- Skor draft punya daya prediksi nyata (+4,6 poin di atas tebakan dasar). Angka ini wajar, karena di pub draft hanya menentukan sebagian kecil hasil.
+- Meta adalah komponen terkuat, counter kedua, dan synergy lemah. Bobot diganti ke 1 / 0,2 / 0,5 (dekat dengan hasil regresi logistik 1 / 0,17 / 0,49).
+- Per kelompok rank dengan bobot baru (tim dengan skor lebih tinggi menang): Herald–Guardian 58,2%, Crusader–Archon 55,2%, Legend–Ancient 58,5%, Divine–Immortal 55,3%.
+- Batasan: statistik STRATZ berasal dari periode yang sama, sehingga hasilnya sedikit optimis. Komposisi tim (disable, initiator) dan hero pool tidak ikut diuji.
+- Hasil lengkap tersimpan di `.data/backtest/last-result.json` (lokal, tidak di-commit). Jalankan ulang setiap ada patch besar.
+
 ## Belum dikerjakan dari Tahap 1
-- **Script backtest** untuk mengkalibrasi bobot skor draft terhadap hasil match publik (DEVELOPMENT_PLAN tugas 1.5).
 - **Smoke test E2E dengan Playwright** (tugas 1.8).
 
 ## Catatan lain
