@@ -64,10 +64,11 @@ const RULES: Partial<Record<HeroTrait, Rule>> = {
 };
 
 async function main() {
-  const [heroes, heroAbilities, abilities] = await Promise.all([
+  const [heroes, heroAbilities, abilities, items] = await Promise.all([
     get<Record<string, HeroConst>>("heroes"),
     get<Record<string, { abilities: string[] }>>("hero_abilities"),
     get<Record<string, Ability>>("abilities"),
+    get<Record<string, unknown>>("items"),
   ]);
 
   const currentPath = path.join(process.cwd(), "data", "hero-traits.json");
@@ -131,6 +132,23 @@ async function main() {
   if (missing.length) {
     const names = missing.map((h) => h.localized_name).join(", ");
     console.log(`Heroes missing from data/hero-traits.json: ${names}`);
+  }
+  // Item yang dihapus di patch baru harus diganti di data/counter-items.json.
+  const rulesPath = path.join(process.cwd(), "data", "counter-items.json");
+  if (existsSync(rulesPath)) {
+    const rules = JSON.parse(readFileSync(rulesPath, "utf8")) as {
+      rules: { id: string; items: Record<string, string[]> }[];
+    };
+    const gone = rules.rules.flatMap((r) =>
+      Object.values(r.items)
+        .flat()
+        .filter((k) => !items[k])
+        .map((k) => `${r.id}: ${k}`),
+    );
+    if (gone.length) {
+      console.log("Counter items that no longer exist:");
+      for (const g of gone) console.log(`  ${g}`);
+    }
   }
   if (problems.length) {
     console.log("Dangerous abilities that no longer exist:");

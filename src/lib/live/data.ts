@@ -3,12 +3,19 @@ import counterRules from "../../../data/counter-items.json";
 import heroTraits from "../../../data/hero-traits.json";
 import { cached, HOUR } from "@/lib/cache";
 import { assetUrl, bracketGroupLabel, type HeroInfo } from "@/lib/dota";
-import { getDurations, getItemBuild, getPositions, getProfiles } from "@/lib/hero-data/store";
+import {
+  getDurations,
+  getItemBuild,
+  getMatchups,
+  getPositions,
+  getProfiles,
+} from "@/lib/hero-data/store";
 import type { DurationBin } from "@/lib/hero-data/types";
 import { getHeroes } from "@/lib/heroes";
 import { advise, type Advice, type CounterRulesFile, type ItemInfo } from "@/lib/items/advisor";
 import type { HeroTraitsFile } from "@/lib/items/traits";
 import { opendota } from "@/lib/opendota/client";
+import { buildCheatSheet, type CheatSheet } from "@/lib/plan/cheat-sheet";
 import { buildGamePlan, type AbilityInfo, type GamePlan } from "@/lib/plan/game-plan";
 import type { LiveState } from "./types";
 
@@ -134,5 +141,56 @@ export async function loadLivePlan(state: LiveState): Promise<LivePlan> {
     advice,
     plan,
     missingBuild: !build,
+  };
+}
+
+export interface CheatSheetData {
+  hero: HeroInfo;
+  heroes: HeroInfo[];
+  bracketLabel: string;
+  /** Posisi yang paling sering dimainkan hero ini, dipakai untuk item pentingnya. */
+  position: number | null;
+  sheet: CheatSheet;
+}
+
+export async function loadCheatSheet(
+  heroId: number,
+  bracket: number,
+): Promise<CheatSheetData | null> {
+  const heroes = await getHeroes();
+  const hero = heroes.find((h) => h.id === heroId);
+  if (!hero) return null;
+
+  const positions = (await getPositions(bracket)) ?? [];
+  const main = positions
+    .filter((r) => r.heroId === heroId)
+    .sort((a, b) => b.matchCount - a.matchCount)[0];
+
+  const [matchups, profiles, durations, build, items, abilities] = await Promise.all([
+    getMatchups(heroId, bracket),
+    getProfiles(bracket),
+    getDurations(heroId).catch(() => null),
+    main ? getItemBuild(heroId, main.position, bracket) : Promise.resolve(null),
+    getItemInfo(),
+    getAbilityInfo().catch(() => new Map<string, AbilityInfo>()),
+  ]);
+
+  return {
+    hero,
+    heroes,
+    bracketLabel: bracketGroupLabel(bracket),
+    position: main?.position ?? null,
+    sheet: buildCheatSheet({
+      heroId,
+      heroName: hero.name,
+      matchups,
+      profiles,
+      durations,
+      build,
+      traits,
+      rules,
+      items,
+      abilities,
+    }),
   };
 }

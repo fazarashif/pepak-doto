@@ -243,13 +243,13 @@ Keputusan: D20–D24 di PRD §11.
 |---|---|---|
 | 2.1 | **Sinkron data hero harian.** `scripts/sync-hero-data.ts` mengambil data STRATZ (matchup, posisi, build item, statistik damage) dan winrate per durasi dari OpenDota, lalu menulis ke tabel `hero_data` di Neon. Query digabung dengan alias GraphQL (10 hero per request). Dijalankan GitHub Actions setiap hari (`.github/workflows/sync-hero-data.yml`), dan bisa manual (`npm run sync:hero-data`). Di Vercel aplikasi tidak memanggil STRATZ langsung; di laptop data diambil saat dibutuhkan | ✅ |
 | 2.2 | Draft assistant membaca data hasil sinkron. Kalau belum ada, pakai cadangan OpenDota seperti sekarang | ✅ |
-| 2.3 | `data/hero-traits.json`: sifat yang tidak ada di statistik (ilusi, evasion, ultimate menembus BKB, buff yang bisa di-dispel, summon, silence, mana burn, dll.). Draf dari script (`scripts/draft-hero-traits.ts`, dari deskripsi skill OpenDota), lalu direview. Diberi versi patch | ⬜ |
-| 2.4 | `data/counter-items.json`: ±20 aturan "sifat musuh → item", dibedakan untuk core dan support | ⬜ |
-| 2.5 | `items/advisor.ts`: build inti per fase, item situasional + alasan, target waktu item, penyesuaian ahead/even/behind, item yang sudah dimiliki dicoret. Unit test | ⬜ |
-| 2.6 | `plan/game-plan.ts`: kurva kekuatan tim per durasi, komposisi damage musuh, skill berbahaya. Unit test | ⬜ |
-| 2.7 | Halaman `/live` (mobile-first) + tombol "Start game plan" di `/draft` | ⬜ |
-| 2.8 | Cheat sheet `/heroes/[id]` (data saja) | ⬜ |
-| 2.9 | Checklist update data per patch di `docs/` | ⬜ |
+| 2.3 | `data/hero-traits.json`: sifat yang tidak ada di statistik (ilusi, evasion, ultimate menembus BKB, buff yang bisa di-dispel, summon, silence, mana burn, dll.). Draf dari script (`scripts/draft-hero-traits.ts`, dari deskripsi skill OpenDota), lalu direview. Diberi versi patch | ✅ |
+| 2.4 | `data/counter-items.json`: 12 aturan "sifat/tipe damage musuh → item", dibedakan untuk core, offlane, dan support | ✅ |
+| 2.5 | `items/advisor.ts`: build inti per fase, item situasional + alasan, target waktu item, penyesuaian ahead/even/behind, item yang sudah dimiliki dicoret. Unit test | ✅ |
+| 2.6 | `plan/game-plan.ts`: kurva kekuatan tim per durasi, komposisi damage musuh, skill berbahaya. Unit test | ✅ |
+| 2.7 | Halaman `/live` (mobile-first) + tombol "Start game plan" di `/draft` | ✅ |
+| 2.8 | Cheat sheet `/heroes/[id]` (data saja) | ✅ |
+| 2.9 | Checklist update data per patch: [PATCH_CHECKLIST.md](PATCH_CHECKLIST.md) | ✅ |
 | – | Timer manual + pengingat | Ditunda (D22) |
 
 **Yang perlu disiapkan pemilik:** secret `STRATZ_TOKEN` dan `DATABASE_URL` (Neon production) di GitHub. Panduan: [SETUP.md bagian G](SETUP.md#g-sinkron-data-hero-harian-github-actions).

@@ -1,5 +1,6 @@
 import { Lightning, ShieldSlash } from "@phosphor-icons/react/ssr";
 import { FramedPanel, MarginNote, MaskedSvg } from "@/components/brand";
+import { PowerCurve } from "@/components/power-curve";
 import { cn } from "@/lib/cn";
 import { pct } from "@/lib/dota";
 import {
@@ -10,7 +11,7 @@ import {
   type Phase,
   type SituationalEntry,
 } from "@/lib/items/advisor";
-import { CURVE_FROM, CURVE_TO, type GamePlan, type PowerPoint } from "@/lib/plan/game-plan";
+import type { GamePlan } from "@/lib/plan/game-plan";
 import { OwnedToggle } from "./owned-toggle";
 
 const PHASE_LABEL: Record<Phase, string> = {
@@ -147,7 +148,22 @@ export function LiveResults({
           <>
             <MarginNote className="text-lg not-italic">{plan.summary}</MarginNote>
             {plan.stateTip ? <p className="text-sm">{plan.stateTip}</p> : null}
-            <PowerCurve curve={plan.curve} summary={plan.summary} />
+            <PowerCurve
+              label={`How each lineup does by game length. ${plan.summary}`}
+              note="Win rate compared with each hero's average, by game length in minutes."
+              series={[
+                {
+                  label: "Your team",
+                  variant: "accent",
+                  points: plan.curve.map((p) => ({ minute: p.minute, value: p.allies })),
+                },
+                {
+                  label: "Enemy team",
+                  variant: "muted",
+                  points: plan.curve.map((p) => ({ minute: p.minute, value: p.enemies })),
+                },
+              ]}
+            />
             {advice.enemyDamage ? <DamageBar mix={advice.enemyDamage} /> : null}
           </>
         ) : (
@@ -328,78 +344,5 @@ function DamageBar({ mix }: { mix: NonNullable<Advice["enemyDamage"]> }) {
         ))}
       </ul>
     </div>
-  );
-}
-
-const W = 320;
-const H = 140;
-const PAD = { left: 30, right: 8, top: 10, bottom: 22 };
-const RANGE = 0.12;
-
-function PowerCurve({ curve, summary }: { curve: PowerPoint[]; summary: string }) {
-  const x = (m: number) =>
-    PAD.left + ((m - CURVE_FROM) / (CURVE_TO - CURVE_FROM)) * (W - PAD.left - PAD.right);
-  const y = (v: number) => {
-    const clamped = Math.max(-RANGE, Math.min(RANGE, v));
-    return PAD.top + ((RANGE - clamped) / (2 * RANGE)) * (H - PAD.top - PAD.bottom);
-  };
-  const line = (key: "allies" | "enemies") =>
-    curve
-      .map((p, i) => `${i ? "L" : "M"}${x(p.minute).toFixed(1)},${y(p[key]).toFixed(1)}`)
-      .join(" ");
-
-  return (
-    <figure className="grid gap-2 rounded-lg border border-border bg-surface p-4">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label={`How each lineup does by game length. ${summary}`}
-        className="w-full"
-      >
-        <line
-          x1={PAD.left}
-          x2={W - PAD.right}
-          y1={y(0)}
-          y2={y(0)}
-          className="stroke-border-strong"
-          strokeDasharray="3 3"
-        />
-        {[15, 30, 45, 60].map((m) => (
-          <text
-            key={m}
-            x={x(m)}
-            y={H - 6}
-            textAnchor="middle"
-            className="fill-muted font-mono text-[9px]"
-          >
-            {m === 60 ? "60+" : m}
-          </text>
-        ))}
-        <text x={2} y={y(RANGE) + 4} className="fill-muted font-mono text-[9px]">
-          better
-        </text>
-        <text x={2} y={y(-RANGE)} className="fill-muted font-mono text-[9px]">
-          worse
-        </text>
-        <path
-          d={line("enemies")}
-          className="fill-none stroke-muted"
-          strokeWidth={2}
-          strokeDasharray="5 4"
-        />
-        <path d={line("allies")} className="fill-none stroke-accent" strokeWidth={2.5} />
-      </svg>
-      <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-0.5 w-5 bg-accent" aria-hidden />
-          Your team
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-0 w-5 border-t-2 border-dashed border-muted" aria-hidden />
-          Enemy team
-        </span>
-        <span>Win rate compared with each hero&apos;s average, by game length in minutes.</span>
-      </figcaption>
-    </figure>
   );
 }
