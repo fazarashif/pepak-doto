@@ -82,7 +82,10 @@ export interface ItemConstant {
 
 export interface Benchmark {
   raw: number;
+  /** Persentil dibanding semua pemain hero ini (0..1). */
   pct: number;
+  /** Persentil dibanding pemain hero ini di bracket rank yang sama, kalau tersedia. */
+  pct_bracket?: number;
 }
 
 export interface MatchPlayer {
@@ -117,6 +120,7 @@ export interface MatchPlayer {
   lane?: number | null; // 1 bawah, 2 mid, 3 atas, 4/5 jungle
   lane_role?: number | null;
   position_est?: number | null;
+  leaver_status?: number | null;
   lane_efficiency_pct?: number | null;
   lh_t?: number[] | null;
   dn_t?: number[] | null;

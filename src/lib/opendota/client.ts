@@ -1,5 +1,6 @@
 import "server-only";
 import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
+import { isParsed } from "@/lib/match/analyze";
 import { recordUsage } from "@/lib/usage";
 import type {
   HeroStat,
@@ -35,10 +36,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new OpenDotaError(`OpenDota ${res.status} untuk ${path}`, res.status);
   }
   return (await res.json()) as T;
-}
-
-export function isParsed(match: Match) {
-  return Boolean(match.od_data?.has_parsed ?? match.version);
 }
 
 const persist = { persist: true };
@@ -77,9 +74,10 @@ export const opendota = {
       request<PlayerProfile>(`/players/${accountId}`),
     ),
 
+  /** Statistik hero pemain dalam setahun terakhir, supaya hero pool mencerminkan kebiasaan sekarang. */
   playerHeroes: (accountId: number) =>
     cached(`od:playerHeroes:${accountId}`, 30 * MINUTE, () =>
-      request<PlayerHero[]>(`/players/${accountId}/heroes`),
+      request<PlayerHero[]>(`/players/${accountId}/heroes?date=365`),
     ),
 
   recentMatches: (accountId: number) =>
