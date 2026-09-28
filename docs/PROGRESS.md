@@ -1,39 +1,54 @@
 # Progres
 
-> Rencana lengkap: [PRD.md](PRD.md) dan [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md).
+> Rencana lengkap: [PRD.md](PRD.md) dan [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md). Setup hosting: [SETUP.md](SETUP.md).
 
-## Status saat ini (2026-09-27)
+## Status saat ini (2026-09-28)
 
-**Tahap 0 (Fondasi): kode selesai di branch `feat/foundation`, menunggu setup Vercel + Neon oleh pemilik.**
+- **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
+- **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer ada di branch `feat/stage-1`, menunggu review PR.
 
-### Selesai
-| # | Tugas | Catatan |
-|---|---|---|
-| 0.1–0.4 | Scaffold, client OpenDota, helper Dota, repo GitHub | |
-| 0.5 | Dependency | Zod, jose, Drizzle, Neon driver, PGlite, Phosphor, next-themes, cva, Vitest, Prettier, Vercel Analytics. Node masih 20.18 (jalan), upgrade ke 22 tetap disarankan |
-| 0.7 | Skema DB + migrasi | `users`, `app_settings`, `api_cache`, `api_usage`. Migrasi di `drizzle/`. Lokal otomatis memakai PGlite (`.data/pglite`, tidak di-commit) dan migrasi jalan sendiri |
-| 0.8 | Login Steam | OpenID 2.0 + cookie state anti-CSRF + verifikasi ke Steam + session JWT (30 hari). Logout dan hapus akun lewat server action |
-| 0.9 | Admin | `/admin` hanya untuk Steam ID di `ADMIN_STEAM_IDS` (selain itu 404). Menampilkan status layanan, jumlah user, dan pemakaian API 7 hari |
-| 0.10 | Layout | Tema gelap (default) + terang, navigasi desktop/HP, skip link, footer + disclaimer Valve, halaman Privacy, 404 |
-| 0.11 | Profil | Avatar, nama, rank, form preferensi (rank + posisi), catatan kalau data match privat |
-| 0.12 | Hero picker | Pencarian, filter atribut, state kosong. Dipakai di `/heroes` (winrate per rank, hero terpilih tersimpan di URL) |
-| 0.13 | Client STRATZ | Token terverifikasi (15.000 request/hari). Query `heroVsHeroMatchup` (synergy + advantage) sudah dicoba |
-| 0.14 | Error ramah | Halaman tetap jalan kalau DB/API gagal; pesan jelas di Heroes dan Sign in |
-| – | Cache 2 lapis | Memori + tabel `api_cache`. Cron harian `/api/cron/daily` membersihkan cache kedaluwarsa (`vercel.json`) |
-| – | Test | 16 unit test (validasi OpenID, konversi ID, redirect aman, bracket STRATZ). Lint, typecheck, dan build production lulus |
+## Tahap 1: yang sudah dikerjakan
 
-### Menunggu pemilik
-1. **Vercel:** import repo `fazarashif/pepak-doto` di vercel.com, lalu pasang **Neon** dari tab Storage/Marketplace. Env `DATABASE_URL` terisi otomatis.
-2. **Env di Vercel:** `SESSION_SECRET` (buat baru, jangan pakai yang lokal), `ADMIN_STEAM_IDS`, `STRATZ_TOKEN`, `STEAM_WEB_API_KEY`, `CRON_SECRET`.
-3. **Migrasi ke Neon:** `npm run db:migrate` dengan `DATABASE_URL` Neon.
-4. **SteamID64 pemilik** untuk `ADMIN_STEAM_IDS` (lokal dan Vercel).
-5. Coba login Steam sendiri (tidak bisa dites otomatis karena butuh akun asli).
+### Draft Assistant (`/draft`)
+- **Papan draft:** slot tim (4 + "You"), musuh (5), dan ban (sampai 16). Di desktop, pemilih hero tampil di bawah papan. Di HP, mengetuk slot membuka pemilih hero sebagai dialog.
+- **State di URL** (`?a=…&e=…&b=…&r=…&p=…`), jadi aman di-refresh dan bisa dibagikan.
+- **Default rank dan posisi:** diambil dari URL, lalu preferensi profil, lalu rank asli OpenDota.
+- **Rekomendasi pick (12) dan ban (5)** beserta alasan tertulis, peringatan komposisi, dan pita bookmark pada pick teratas.
+- **Data STRATZ:**
+  - `heroVsHeroMatchup` untuk counter dan synergy.
+  - `heroStats.stats(groupByPosition)` untuk winrate meta **per posisi per bracket** dan filter posisi. Ini lebih akurat daripada data lane OpenDota.
+  - Kalau STRATZ gagal, otomatis pindah ke OpenDota (hanya match pro, filter posisi tidak berlaku) dengan catatan di UI.
+- **Hero pool** (user login): menambah skor, plus toggle "only heroes I've played at least 5 times". Data dari `/players/{id}/heroes?date=365`.
+- **Pembatasan request:** paling banyak 4 request STRATZ sekaligus (batas STRATZ 8/detik), dan hasilnya di-cache 12–24 jam di database.
 
-### Temuan yang perlu diingat untuk Tahap 1
-- **OpenDota tidak punya data Immortal** (`8_pick` = 0 untuk semua hero). Draft untuk user Immortal perlu memakai data Divine atau STRATZ (`DIVINE_IMMORTAL`).
-- STRATZ mengelompokkan rank berpasangan (Herald–Guardian, Crusader–Archon, Legend–Ancient, Divine–Immortal). Nilai `synergy` sudah dalam poin persen.
-- JSON match OpenDota ±230 KB, jadi hanya di-cache di memori. Yang disimpan permanen nanti adalah laporan ringkas.
-- `.env.local` di laptop pertama sempat berupa folder; isinya sudah dipindah ke file yang benar. Folder aslinya ada di `.env.local.original/` (diabaikan Git, boleh dihapus).
+### Post-Match Analyzer (`/match`, `/match/[id]`)
+- **Input:** match ID atau link OpenDota/Dotabuff/STRATZ. User yang login juga mendapat daftar 10 match terakhir (tanpa Turbo).
+- **Pilih pemain:** otomatis kalau user login dan ada di match itu. Kalau tidak, muncul pilihan 10 pemain.
+- **Nilai A–D** (farming, XP, damage, survival, partisipasi) dari persentil OpenDota. `pct_bracket` dipakai kalau tersedia.
+- **Kalau replay sudah di-parse:**
+  - laning menit ke-10 (LH/DN, efisiensi, selisih gold lane)
+  - kematian per fase dan pembunuh terbanyak
+  - waktu beli item inti
+  - vision
+- **Ringkasan:** maksimal 3 prioritas perbaikan beserta tips, dan hal yang sudah bagus.
+- **Tombol "Parse replay":** halaman mengecek ulang setiap 10 detik, maksimal 5 menit.
+- Match Turbo, match tidak ditemukan, dan data privat masing-masing punya pesan dan ilustrasi sendiri.
 
-## Berikutnya: Tahap 1
-Draft Assistant (STRATZ + meta + hero pool) dan Post-Match Analyzer. Rincian di DEVELOPMENT_PLAN §7.
+### Test
+- 38 unit test (mesin draft, analisis match, OpenID, helper). Lint, typecheck, dan build lulus.
+
+## Temuan penting (sudah diterapkan)
+- **Persentil kematian OpenDota sudah "makin tinggi makin baik".** Tidak dibalik. Rencana awal salah, dan ini terlihat saat dites dengan data asli (1 kematian dapat nilai D).
+- **Winrate waktu item bias ke waktu lambat.** Game panjang yang sudah unggul membuat pembelian lambat terlihat bagus. Pembanding sekarang hanya bucket yang **lebih cepat** dari waktu pemain. Pembelian yang lebih lambat dari semua bucket ditandai "later than most players".
+- **Item komponen** (mis. Kaya, Sange) tidak dibahas terpisah kalau item gabungannya juga dibeli.
+- **Peran pemain** di match yang belum di-parse ditebak dari last hit per menit (< 2 = support). Support tidak diberi saran farming.
+- **Tanda matchup STRATZ:** `vs.synergy` positif berarti hero pertama unggul. Nilainya hampir simetris dan berkorelasi 0,74 dengan winrate. Nilai dihaluskan berdasarkan jumlah match (k = 300).
+
+## Belum dikerjakan dari Tahap 1
+- **Script backtest** untuk mengkalibrasi bobot skor draft terhadap hasil match publik (DEVELOPMENT_PLAN tugas 1.5).
+- **Smoke test E2E dengan Playwright** (tugas 1.8).
+
+## Catatan lain
+- Node 20.18 masih jalan; upgrade ke 22 tetap disarankan.
+- Build menampilkan 2 peringatan tidak berbahaya: Next belum punya metrik fallback untuk font Atkinson Hyperlegible.
+- Aksara Jawa belum dipakai sampai dicek penutur asli.
