@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { ArrowRight } from "@phosphor-icons/react";
 import { FramedPanel, MaskedSvg } from "@/components/brand";
 import { HeroPicker } from "@/components/hero-picker";
 import { HeroPortrait } from "@/components/hero-portrait";
@@ -60,6 +62,14 @@ function HeroDetail({ hero }: { hero: HeroWithMeta }) {
           {ATTR_LABEL[hero.primaryAttr]}, {hero.attackType.toLowerCase()}
         </p>
       </div>
+
+      <Link
+        href={`/heroes/${hero.id}`}
+        className="flex w-fit items-center gap-1 text-sm font-medium text-accent-fg underline-offset-4 hover:underline"
+      >
+        How to play against {hero.name}
+        <ArrowRight size={14} aria-hidden />
+      </Link>
 
       <ul className="flex flex-wrap gap-1.5" aria-label="Roles">
         {hero.roles.map((role) => (

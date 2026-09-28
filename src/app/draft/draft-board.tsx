@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Plus, Warning, X } from "@phosphor-icons/react";
+import { ArrowRight, Plus, Warning, X } from "@phosphor-icons/react";
 import { FramedPanel, MaskedSvg, Ribbon } from "@/components/brand";
 import { HeroPicker } from "@/components/hero-picker";
 import { HeroPortrait } from "@/components/hero-portrait";
-import { Button } from "@/components/ui/button";
+import { Button, buttonStyles } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { BRACKETS, POSITIONS, type HeroInfo } from "@/lib/dota";
 import type { Reason } from "@/lib/draft/engine";
@@ -125,14 +125,24 @@ export function DraftBoard({ heroes, initial, signedIn }: Props) {
             onRemove={remove}
           />
           {taken.size ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit"
-              onClick={() => setState((s) => ({ ...s, allies: [], enemies: [], bans: [] }))}
-            >
-              Clear draft
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {state.enemies.length ? (
+                <Link
+                  href={gamePlanHref(state)}
+                  className={buttonStyles({ variant: "secondary", size: "sm" })}
+                >
+                  Start game plan
+                  <ArrowRight size={16} aria-hidden />
+                </Link>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setState((s) => ({ ...s, allies: [], enemies: [], bans: [] }))}
+              >
+                Clear draft
+              </Button>
+            </div>
           ) : null}
         </section>
 
@@ -144,6 +154,7 @@ export function DraftBoard({ heroes, initial, signedIn }: Props) {
         byId={byId}
         signedIn={signedIn}
         hasEnemies={state.enemies.length > 0}
+        draft={state}
       />
 
       <dialog
@@ -166,6 +177,17 @@ export function DraftBoard({ heroes, initial, signedIn }: Props) {
       </dialog>
     </div>
   );
+}
+
+/** Buka Game Plan dengan hero dan setelan dari draft ini. */
+function gamePlanHref(state: DraftState, heroId?: number) {
+  const params = new URLSearchParams();
+  if (heroId) params.set("h", String(heroId));
+  if (state.allies.length) params.set("a", state.allies.join(","));
+  if (state.enemies.length) params.set("e", state.enemies.join(","));
+  params.set("p", String(state.position));
+  params.set("r", String(state.bracket));
+  return `/live?${params}`;
 }
 
 function useDraftSuggestions(state: DraftState) {
@@ -449,10 +471,12 @@ function Suggestions({
   byId,
   signedIn,
   hasEnemies,
+  draft,
 }: ReturnType<typeof useDraftSuggestions> & {
   byId: Map<number, HeroInfo>;
   signedIn: boolean;
   hasEnemies: boolean;
+  draft: DraftState;
 }) {
   const [tab, setTab] = useState<"picks" | "bans">("picks");
   const tabsId = useId();
@@ -540,6 +564,9 @@ function Suggestions({
                         score={s.score}
                         reasons={s.reasons}
                         top={i === 0 && tab === "picks"}
+                        planHref={
+                          tab === "picks" && hasEnemies ? gamePlanHref(draft, s.heroId) : null
+                        }
                       />
                     );
                   })
@@ -573,11 +600,14 @@ function SuggestionItem({
   score,
   reasons,
   top,
+  planHref,
 }: {
   hero: HeroInfo;
   score: number;
   reasons: Reason[];
   top: boolean;
+  /** Link ke Game Plan dengan hero ini, kalau musuh sudah diisi. */
+  planHref: string | null;
 }) {
   return (
     <li className="relative grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0">
@@ -608,6 +638,15 @@ function SuggestionItem({
               </li>
             ))}
           </ul>
+        ) : null}
+        {planHref ? (
+          <Link
+            href={planHref}
+            className="flex w-fit items-center gap-1 text-sm text-accent-fg underline-offset-4 hover:underline"
+          >
+            Game plan with {hero.name}
+            <ArrowRight size={14} aria-hidden />
+          </Link>
         ) : null}
       </div>
       {top ? <Ribbon className="top-2 right-0 h-10 w-3" /> : null}

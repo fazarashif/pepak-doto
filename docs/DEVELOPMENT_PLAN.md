@@ -3,8 +3,13 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.3 (2026-09-27) |
+| Versi | 0.4 (2026-09-28) |
 | Terkait | [PRD.md](PRD.md), [PROGRESS.md](PROGRESS.md) |
+
+**Perubahan di 0.4:**
+- Rincian Tahap 2 (§7), termasuk sinkron STRATZ harian lewat GitHub Actions.
+- Bobot skor draft dari hasil backtest (§8).
+- LLM utama sekarang Claude (Anthropic API, default Claude Haiku 4.5); LLM gratis jadi pilihan lain dan cadangan (§4).
 
 **Perubahan di 0.3:**
 - LLM hanya dari provider gratis.
@@ -48,7 +53,7 @@ Semua layanan memakai **free tier**. Kolom terakhir menunjukkan jalur upgrade ka
 | Job terjadwal | **Vercel Cron** (Hobby: sekali sehari) | Refresh data meta (heroStats, matchup) tiap hari | Frekuensi lebih tinggi di Pro |
 | Auth | **Steam OpenID 2.0** (implementasi kecil sendiri) + session cookie ter-signed (`jose`) | Steam memakai OpenID 2.0 yang tidak didukung bawaan Auth.js. Implementasinya pendek dan mudah diaudit | – |
 | Data | OpenDota (REST), **STRATZ (GraphQL)**. Steam Web API opsional | Lihat PRD §9 | API key berbayar OpenDota |
-| LLM | Interface `LlmProvider`: Gemini (free tier), Groq, OpenRouter, provider format OpenAI. **Hanya yang gratis** | Admin memilih model tanpa deploy ulang (F11) | Model berbayar cukup dengan menambah API key |
+| LLM | Interface `LlmProvider`: **Anthropic (Claude, utama)**, Gemini (free tier), Groq, OpenRouter, provider format OpenAI | Admin memilih model tanpa deploy ulang (F11) | Ganti ke model Claude yang lebih besar dari admin |
 | Analytics | **Vercel Web Analytics** (tanpa cookie) | Gratis, tidak perlu banner cookie | – |
 | Validasi | **Zod** | Input API dan respons eksternal | – |
 | Data fetching client | **TanStack Query** | Debounce draft, polling parse | – |
@@ -105,8 +110,10 @@ flowchart LR
   D --> OD[(OpenDota)]
   D --> ST[(STRATZ)]
   A --> SW[(Steam OpenID)]
-  S --> LR[LLM router] --> L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
+  S --> LR[LLM router] --> L0[(Claude)] & L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
   CR[Vercel Cron harian] --> D
+  GA[GitHub Actions harian<br/>sync STRATZ] --> ST
+  GA --> DB
   AD[Admin panel] --> R
 ```
 
@@ -119,26 +126,35 @@ flowchart LR
 
 ## 4. Desain LLM yang bisa dikonfigurasi admin
 
-**Keputusan: hanya LLM gratis, tanpa billing.** Langganan Google AI Pro tidak memberi kuota API, dan kredit Cloud-nya butuh billing aktif, jadi tidak dipakai.
+**Keputusan (diperbarui 2026-09-28): LLM utama adalah Claude lewat Anthropic API.** Admin tetap bisa mengganti model atau memindahkan LLM utama ke provider gratis tanpa deploy ulang.
 
-**Provider gratis yang direncanakan** (batas dari sumber pihak ketiga, dicek ulang saat Tahap 4):
+**Model default: Claude Haiku 4.5** (`claude-haiku-4-5-20251001`). Alasannya:
+- Tugasnya hanya menarasikan fakta yang sudah dihitung aplikasi (nilai, prioritas, item), bukan menganalisis dari nol. Model kecil sudah cukup.
+- Paling murah dan paling cepat di keluarga Claude, jadi narasi tampil cepat dan biaya kecil.
+- Kalau hasilnya terasa kurang, admin bisa naik ke **Claude Sonnet 5** (`claude-sonnet-5`) dari panel admin.
 
-| Provider | Model gratis (contoh) | Kuota (perkiraan) | Peran |
+**Biaya:** Claude API berbayar per token dan butuh akun di Anthropic Console dengan kredit. Ini terpisah dari langganan claude.ai. Satu narasi kira-kira 2.000 token input + 400 token output. Dengan batas 200 narasi per hari, biaya bulanan tetap kecil; harga pastinya dicek ulang saat Tahap 4. Pengaman:
+- batas belanja bulanan di Anthropic Console
+- batas aplikasi 10 narasi per user dan 200 total per hari
+- narasi di-cache, jadi match yang sama tidak dinarasikan dua kali
+- kalau Claude error atau batas belanja habis, router pindah ke cadangan gratis
+
+**Provider gratis sebagai pilihan lain dan cadangan** (batas dari sumber pihak ketiga, dicek ulang saat Tahap 4):
+
+| Provider | Model gratis (contoh) | Kuota (perkiraan) | Peran default |
 |---|---|---|---|
-| **Google Gemini** (AI Studio, free tier) | Flash / Flash-Lite | ±1.500 request/hari | **Utama.** Kuota paling longgar, bahasa Inggris bagus |
-| **Groq** | gpt-oss-120b, dll. | ±1.000 request/hari per model | Cadangan 1. Sangat cepat |
-| **OpenRouter** (model `:free`) | DeepSeek, Qwen, Llama | 50 request/hari (1.000 kalau pernah top-up $10) | Cadangan 2 |
+| **Google Gemini** (AI Studio, free tier) | Flash / Flash-Lite | ±1.500 request/hari | Cadangan 1 |
+| **Groq** | gpt-oss-120b, dll. | ±1.000 request/hari per model | Cadangan 2. Sangat cepat |
+| **OpenRouter** (model `:free`) | DeepSeek, Qwen, Llama | 50 request/hari (1.000 kalau pernah top-up $10) | Opsional |
 | Provider format OpenAI lain | mis. Cerebras, Mistral | Bervariasi | Opsional, ditambah kalau perlu |
 
-Batas aplikasi (**200 narasi/hari total**) jauh di bawah kuota Gemini saja, jadi cadangan hanya dipakai kalau provider utama error.
-
-**Catatan privasi:** data di free tier Gemini boleh dipakai Google untuk melatih model. Karena itu prompt hanya berisi statistik (tanpa nama, Steam ID, atau match ID), dan hal ini disebutkan di Privacy Policy.
+**Catatan privasi:** Anthropic tidak memakai data API untuk melatih model secara default. Free tier Gemini boleh dipakai Google untuk melatih model. Karena itu prompt hanya berisi statistik (tanpa nama, Steam ID, atau match ID), dan hal ini disebutkan di Privacy Policy.
 
 **Komponen:**
 | Komponen | Isi |
 |---|---|
 | `LlmProvider` (interface) | `id`, `models[]`, `isConfigured()` (key tersedia?), `generate(prompt, options)` |
-| Implementasi | `gemini` (SDK Google GenAI), `openai-compatible` (dipakai untuk Groq, OpenRouter, dan provider lain dengan base URL berbeda) |
+| Implementasi | `anthropic` (SDK resmi Anthropic), `gemini` (SDK Google GenAI), `openai-compatible` (dipakai untuk Groq, OpenRouter, dan provider lain dengan base URL berbeda) |
 | `app_settings.llm` (DB) | `{ enabled, primary: {provider, model}, fallbacks: [...], limits: {perUserPerDay, globalPerDay} }` |
 | LLM router | Coba provider utama, lalu cadangan, lalu teks template. Mencatat pemakaian ke tabel `llm_usage` |
 | Admin UI | Pilih provider/model, atur urutan cadangan, tombol Test, batas pemakaian, grafik pemakaian |
@@ -180,6 +196,7 @@ pepak-doto/
 | Neon Postgres | 0,5 GB storage, 100 CU-jam/bulan, *scale to zero* | Storage > 80% atau cold start mengganggu |
 | OpenDota | 3.000 request/hari, 60/menit | Rata-rata > 2.000/hari, lalu pakai API key berbayar |
 | STRATZ | Batas per token (per detik, jam, hari) | Sering terkena rate limit |
+| Claude API (berbayar) | Tidak ada free tier; dibatasi batas belanja di Anthropic Console | Tagihan mendekati batas belanja, lalu naikkan batas atau turunkan batas harian aplikasi |
 | Gemini API (free tier) | Flash/Flash-Lite, kuota harian | Sering kena batas, lalu tambah provider cadangan atau pertimbangkan model berbayar |
 | Groq / OpenRouter | Kuota harian gratis | Sering habis, lalu naikkan batas atau pakai model berbayar |
 
@@ -212,7 +229,7 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 |---|---|---|
 | 1.1 | `draft/engine.ts`: counter + synergy (STRATZ), meta, hero pool, komposisi, posisi, ban, peringatan. Rumus di §8 | ✅ |
 | 1.2 | Sumber data: STRATZ (utama), OpenDota (cadangan) | ✅ (`draft/data.ts`) |
-| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | ⬜ Belum perlu: cache DB 12–24 jam sudah cukup |
+| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | Dipindah ke Tahap 2.1 (GitHub Actions), karena batas IP STRATZ |
 | 1.4 | `POST /api/draft` + halaman `/draft` | ✅ |
 | 1.5 | Unit test engine + script backtest | ✅ (`npm run backtest`, hasil di PROGRESS.md) |
 | 1.6 | `match/analyze.ts`: nilai, laning, kematian, waktu item, vision, prioritas perbaikan. **Turbo ditolak** | ✅ |
@@ -220,16 +237,26 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 | 1.8 | Unit test analyzer + smoke test E2E | ✅ test, ⬜ E2E |
 
 ### Tahap 2: In-game
-| # | Tugas |
-|---|---|
-| 2.1 | `data/hero-traits.json` (draf dari script, review manual) |
-| 2.2 | `data/counter-items.json` |
-| 2.3 | `items/advisor.ts`: build inti, item situasional, target waktu item |
-| 2.4 | Rencana permainan (kurva winrate per durasi, gaya tim) |
-| 2.5 | Halaman `/live`, hero dibawa dari draft |
-| 2.6 | (Opsional) timer manual + pengingat |
-| 2.7 | Cheat sheet `/heroes/[id]` |
-| 2.8 | Checklist update data per patch |
+Keputusan: D20–D24 di PRD §11.
+
+| # | Tugas | Status |
+|---|---|---|
+| 2.1 | **Sinkron data hero harian.** `scripts/sync-hero-data.ts` mengambil data STRATZ (matchup, posisi, build item, statistik damage) dan winrate per durasi dari OpenDota, lalu menulis ke tabel `hero_data` di Neon. Query digabung dengan alias GraphQL (10 hero per request). Dijalankan GitHub Actions setiap hari (`.github/workflows/sync-hero-data.yml`), dan bisa manual (`npm run sync:hero-data`). Di Vercel aplikasi tidak memanggil STRATZ langsung; di laptop data diambil saat dibutuhkan | ✅ |
+| 2.2 | Draft assistant membaca data hasil sinkron. Kalau belum ada, pakai cadangan OpenDota seperti sekarang | ✅ |
+| 2.3 | `data/hero-traits.json`: sifat yang tidak ada di statistik (ilusi, evasion, ultimate menembus BKB, buff yang bisa di-dispel, summon, silence, mana burn, dll.). Draf dari script (`scripts/draft-hero-traits.ts`, dari deskripsi skill OpenDota), lalu direview. Diberi versi patch | ✅ |
+| 2.4 | `data/counter-items.json`: 12 aturan "sifat/tipe damage musuh → item", dibedakan untuk core, offlane, dan support | ✅ |
+| 2.5 | `items/advisor.ts`: build inti per fase, item situasional + alasan, target waktu item, penyesuaian ahead/even/behind, item yang sudah dimiliki dicoret. Unit test | ✅ |
+| 2.6 | `plan/game-plan.ts`: kurva kekuatan tim per durasi, komposisi damage musuh, skill berbahaya. Unit test | ✅ |
+| 2.7 | Halaman `/live` (mobile-first) + tombol "Start game plan" di `/draft` | ✅ |
+| 2.8 | Cheat sheet `/heroes/[id]` (data saja) | ✅ |
+| 2.9 | Checklist update data per patch: [PATCH_CHECKLIST.md](PATCH_CHECKLIST.md) | ✅ |
+| – | Timer manual + pengingat | Ditunda (D22) |
+
+**Yang perlu disiapkan pemilik:** secret `STRATZ_TOKEN` dan `DATABASE_URL` (Neon production) di GitHub. Panduan: [SETUP.md bagian G](SETUP.md#g-sinkron-data-hero-harian-github-actions).
+
+**Perkiraan beban sinkron:** ±127 hero × rata-rata 2 posisi × 4 bracket untuk data item, ditambah 508 query matchup. Dengan alias GraphQL jadi ratusan request per hari, jauh di bawah batas STRATZ 15.000/hari. Datanya diringkas sebelum disimpan (beberapa MB), aman untuk batas 0,5 GB Neon.
+
+**Selesai bila:** dari draft yang lengkap, `/live` menampilkan build, item situasional dengan alasan, dan rencana permainan di HP tanpa memanggil STRATZ langsung; cheat sheet tampil untuk semua hero; sinkron harian berjalan di GitHub Actions.
 
 ### Tahap 3: Profil pemain
 | # | Tugas |
@@ -243,7 +270,7 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 ### Tahap 4: Coaching LLM
 | # | Tugas |
 |---|---|
-| 4.1 | Interface `LlmProvider` + implementasi Gemini dan OpenAI-compatible |
+| 4.1 | Interface `LlmProvider` + implementasi Anthropic (Claude), Gemini, dan OpenAI-compatible |
 | 4.2 | LLM router: cadangan, batas pemakaian, pencatatan ke `llm_usage` |
 | 4.3 | Admin UI: pilih model, urutan cadangan, Test, batas, grafik pemakaian |
 | 4.4 | Prompt berbasis fakta (diberi versi) + narasi post-match, tren, cheat sheet |

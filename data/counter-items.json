@@ -1,0 +1,126 @@
+{
+  "patch": "7.41",
+  "reviewed": "2026-09-28",
+  "rules": [
+    {
+      "id": "illusions",
+      "when": { "trait": "illusions" },
+      "how": "Cleave and chain lightning clear illusions quickly.",
+      "items": {
+        "core": ["bfury", "mjollnir", "maelstrom", "radiance"],
+        "offlane": ["shivas_guard", "radiance"],
+        "support": []
+      }
+    },
+    {
+      "id": "summons",
+      "when": { "trait": "summons" },
+      "how": "Area damage kills summoned units before they add up.",
+      "items": {
+        "core": ["bfury", "mjollnir", "maelstrom"],
+        "offlane": ["shivas_guard", "radiance"],
+        "support": []
+      }
+    },
+    {
+      "id": "evasion",
+      "when": { "trait": "evasion" },
+      "how": "True Strike ignores evasion.",
+      "items": {
+        "core": ["monkey_king_bar", "bloodthorn"],
+        "offlane": [],
+        "support": []
+      }
+    },
+    {
+      "id": "heal",
+      "when": { "trait": "heal" },
+      "how": "Healing reduction makes their sustain much weaker.",
+      "items": {
+        "core": ["skadi", "shivas_guard"],
+        "offlane": ["spirit_vessel", "shivas_guard"],
+        "support": ["spirit_vessel"]
+      }
+    },
+    {
+      "id": "invisibility",
+      "when": { "trait": "invisibility" },
+      "how": "Detection lets your team see and hit them.",
+      "items": {
+        "core": [],
+        "offlane": ["dust"],
+        "support": ["ward_sentry", "dust", "gem"]
+      }
+    },
+    {
+      "id": "silence",
+      "when": { "trait": "silence" },
+      "how": "Dispel or block the silence so you can still use your spells.",
+      "items": {
+        "core": ["manta", "black_king_bar"],
+        "offlane": ["black_king_bar", "lotus_orb"],
+        "support": ["cyclone", "lotus_orb"]
+      }
+    },
+    {
+      "id": "escape",
+      "when": { "trait": "escape" },
+      "how": "Hex, silence and roots stop them from getting away.",
+      "items": {
+        "core": ["orchid", "bloodthorn", "abyssal_blade", "sheepstick"],
+        "offlane": ["sheepstick", "harpoon"],
+        "support": ["rod_of_atos", "sheepstick", "gungir"]
+      }
+    },
+    {
+      "id": "dispellableBuffs",
+      "when": { "trait": "dispellableBuffs" },
+      "how": "A dispel removes the buffs they rely on.",
+      "items": {
+        "core": ["nullifier", "diffusal_blade"],
+        "offlane": ["nullifier"],
+        "support": ["cyclone"]
+      }
+    },
+    {
+      "id": "passives",
+      "when": { "trait": "passives" },
+      "how": "Break turns off their passive abilities.",
+      "items": {
+        "core": ["silver_edge"],
+        "offlane": ["silver_edge"],
+        "support": []
+      }
+    },
+    {
+      "id": "bkbPierce",
+      "when": { "trait": "bkbPierce" },
+      "how": "BKB won't stop these disables. Linken's Sphere blocks the targeted ones and Aeon Disk buys time.",
+      "items": {
+        "core": ["sphere", "aeon_disk"],
+        "offlane": ["aeon_disk"],
+        "support": ["force_staff", "glimmer_cape"]
+      }
+    },
+    {
+      "id": "magicHeavy",
+      "when": { "stat": "magicShare", "min": 0.56 },
+      "how": "Most of their damage is magic.",
+      "items": {
+        "core": ["black_king_bar"],
+        "offlane": ["pipe", "eternal_shroud", "black_king_bar"],
+        "support": ["glimmer_cape", "pipe"]
+      }
+    },
+    {
+      "id": "physicalHeavy",
+      "when": { "stat": "physicalShare", "min": 0.55 },
+      "how": "Most of their damage comes from right-clicks.",
+      "items": {
+        "core": ["butterfly", "assault"],
+        "offlane": ["crimson_guard", "heavens_halberd", "shivas_guard", "blade_mail"],
+        "support": ["ghost", "solar_crest", "force_staff"]
+      }
+    }
+  ]
+}

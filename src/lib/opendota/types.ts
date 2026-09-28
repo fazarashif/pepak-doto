@@ -148,3 +148,17 @@ export interface Match {
   od_data?: { has_parsed?: boolean } | null;
   players: MatchPlayer[];
 }
+
+export interface DurationRow {
+  duration_bin: number; // detik
+  games_played: number;
+  wins: number;
+}
+
+export interface AbilityConstant {
+  dname?: string;
+  desc?: string;
+  behavior?: string | string[];
+  bkbpierce?: string;
+  dispellable?: string;
+}

@@ -2,7 +2,7 @@ import "server-only";
 import type { DraftData, HeroMatchupTable, PositionStat } from "@/lib/draft/engine";
 import { getHeroes } from "@/lib/heroes";
 import { opendota } from "@/lib/opendota/client";
-import { isStratzConfigured, stratz } from "@/lib/stratz/client";
+import { getMatchups, getPositions } from "@/lib/hero-data/store";
 
 export type DraftSource = "stratz" | "opendota";
 
@@ -20,11 +20,13 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
+/** Data STRATZ hasil sinkron harian. Null kalau ada yang belum tersedia. */
 async function fromStratz(picked: number[], bracket: number) {
   const [positionRows, tables] = await Promise.all([
-    stratz.heroPositions(bracket),
-    mapLimit(picked, 4, (id) => stratz.heroMatchups(id, bracket)),
+    getPositions(bracket),
+    mapLimit(picked, 4, (id) => getMatchups(id, bracket)),
   ]);
+  if (!positionRows?.length || tables.some((t) => t === null)) return null;
 
   const positions = new Map<number, PositionStat[]>();
   for (const row of positionRows) {
@@ -37,13 +39,10 @@ async function fromStratz(picked: number[], bracket: number) {
   }
 
   const matchups = new Map<number, HeroMatchupTable>();
+  const toMap = (rows: [number, number, number][]) =>
+    new Map(rows.map(([heroId2, matchCount, synergy]) => [heroId2, { synergy, matchCount }]));
   tables.forEach((t, i) => {
-    matchups.set(picked[i], {
-      with: new Map(
-        t.with.map((p) => [p.heroId2, { synergy: p.synergy, matchCount: p.matchCount }]),
-      ),
-      vs: new Map(t.vs.map((p) => [p.heroId2, { synergy: p.synergy, matchCount: p.matchCount }])),
-    });
+    matchups.set(picked[i], { with: toMap(t!.with), vs: toMap(t!.vs) });
   });
   return { positions, matchups };
 }
@@ -112,16 +111,11 @@ export async function loadDraftData({
   ]);
 
   let source: DraftSource = "stratz";
-  let tables: Awaited<ReturnType<typeof fromStratz>>;
-  if (isStratzConfigured()) {
-    try {
-      tables = await fromStratz(picked, bracket);
-    } catch (err) {
-      console.warn("[draft] STRATZ failed, using OpenDota", err);
-      source = "opendota";
-      tables = await fromOpenDota(picked, bracket);
-    }
-  } else {
+  let tables = await fromStratz(picked, bracket).catch((err) => {
+    console.warn("[draft] STRATZ data failed", err);
+    return null;
+  });
+  if (!tables) {
     source = "opendota";
     tables = await fromOpenDota(picked, bracket);
   }

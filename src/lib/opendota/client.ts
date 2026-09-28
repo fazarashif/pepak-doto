@@ -3,6 +3,8 @@ import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
 import { isParsed } from "@/lib/match/analyze";
 import { recordUsage } from "@/lib/usage";
 import type {
+  AbilityConstant,
+  DurationRow,
   HeroStat,
   ItemConstant,
   ItemTimingRow,
@@ -104,6 +106,15 @@ export const opendota = {
     await invalidate(`od:match:${matchId}`);
     return opendota.match(matchId);
   },
+
+  /** Jumlah game dan menang per durasi (bin 5 menit, detik). */
+  durations: (heroId: number) =>
+    cached(`od:durations:${heroId}`, 12 * HOUR, () =>
+      request<DurationRow[]>(`/heroes/${heroId}/durations`),
+    ),
+
+  /** Konstanta skill (±1,3 MB). Tidak di-cache di sini; pemanggil menyimpan ringkasannya saja. */
+  abilities: () => request<Record<string, AbilityConstant>>("/constants/abilities"),
 
   items: () =>
     cached(

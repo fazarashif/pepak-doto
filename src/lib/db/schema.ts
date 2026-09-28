@@ -61,4 +61,22 @@ export const apiUsage = pgTable(
   (t) => [primaryKey({ columns: [t.day, t.provider] })],
 );
 
+/**
+ * Data hero hasil sinkron harian (STRATZ dan OpenDota): posisi, matchup, build item, durasi.
+ * hero_id 0 dan position 0 berarti "semua". Lihat src/lib/hero-data/types.ts untuk isi `value`.
+ */
+export const heroData = pgTable(
+  "hero_data",
+  {
+    kind: text("kind").notNull(),
+    bracket: text("bracket").notNull(),
+    heroId: smallint("hero_id").notNull(),
+    position: smallint("position").notNull(),
+    value: jsonb("value").notNull(),
+    source: text("source").notNull(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.bracket, t.heroId, t.position] })],
+);
+
 export type User = typeof users.$inferSelect;

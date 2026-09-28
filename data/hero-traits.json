@@ -1,0 +1,597 @@
+{
+  "patch": "7.41",
+  "reviewed": "2026-09-28",
+  "heroes": {
+    "1": {
+      "name": "Anti-Mage",
+      "traits": ["escape", "passives"],
+      "dangerous": ["antimage_mana_void"]
+    },
+    "2": {
+      "name": "Axe",
+      "traits": ["bkbPierce", "passives"],
+      "dangerous": ["axe_berserkers_call", "axe_culling_blade"]
+    },
+    "3": {
+      "name": "Bane",
+      "traits": ["bkbPierce"],
+      "dangerous": ["bane_fiends_grip", "bane_nightmare"]
+    },
+    "4": {
+      "name": "Bloodseeker",
+      "traits": ["heal", "silence", "dispellableBuffs"],
+      "dangerous": ["bloodseeker_rupture"]
+    },
+    "5": {
+      "name": "Crystal Maiden",
+      "traits": [],
+      "dangerous": ["crystal_maiden_freezing_field", "crystal_maiden_frostbite"]
+    },
+    "6": {
+      "name": "Drow Ranger",
+      "traits": ["silence", "passives"],
+      "dangerous": ["drow_ranger_multishot", "drow_ranger_wave_of_silence"]
+    },
+    "7": {
+      "name": "Earthshaker",
+      "traits": [],
+      "dangerous": ["earthshaker_echo_slam", "earthshaker_fissure"]
+    },
+    "8": {
+      "name": "Juggernaut",
+      "traits": ["heal", "passives"],
+      "dangerous": ["juggernaut_omni_slash", "juggernaut_blade_fury"]
+    },
+    "9": {
+      "name": "Mirana",
+      "traits": ["invisibility", "escape"],
+      "dangerous": ["mirana_arrow", "mirana_invis"]
+    },
+    "10": {
+      "name": "Morphling",
+      "traits": ["escape"],
+      "dangerous": ["morphling_adaptive_strike_agi", "morphling_waveform"]
+    },
+    "11": {
+      "name": "Shadow Fiend",
+      "traits": [],
+      "dangerous": ["nevermore_requiem", "nevermore_shadowraze1"]
+    },
+    "12": {
+      "name": "Phantom Lancer",
+      "traits": ["illusions", "escape"],
+      "dangerous": ["phantom_lancer_juxtapose", "phantom_lancer_doppelwalk"]
+    },
+    "13": {
+      "name": "Puck",
+      "traits": ["escape", "silence"],
+      "dangerous": ["puck_dream_coil", "puck_waning_rift"]
+    },
+    "14": {
+      "name": "Pudge",
+      "traits": ["bkbPierce"],
+      "dangerous": ["pudge_meat_hook", "pudge_dismember"]
+    },
+    "15": {
+      "name": "Razor",
+      "traits": ["passives"],
+      "dangerous": ["razor_static_link", "razor_eye_of_the_storm"]
+    },
+    "16": {
+      "name": "Sand King",
+      "traits": ["invisibility", "escape"],
+      "dangerous": ["sandking_epicenter", "sandking_burrowstrike"]
+    },
+    "17": {
+      "name": "Storm Spirit",
+      "traits": ["escape"],
+      "dangerous": ["storm_spirit_ball_lightning", "storm_spirit_electric_vortex"]
+    },
+    "18": {
+      "name": "Sven",
+      "traits": ["dispellableBuffs"],
+      "dangerous": ["sven_gods_strength", "sven_storm_bolt"]
+    },
+    "19": { "name": "Tiny", "traits": [], "dangerous": ["tiny_avalanche", "tiny_toss"] },
+    "20": {
+      "name": "Vengeful Spirit",
+      "traits": [],
+      "dangerous": ["vengefulspirit_nether_swap", "vengefulspirit_magic_missile"]
+    },
+    "21": {
+      "name": "Windranger",
+      "traits": ["evasion", "escape", "dispellableBuffs"],
+      "dangerous": ["windrunner_shackleshot", "windrunner_focusfire"]
+    },
+    "22": {
+      "name": "Zeus",
+      "traits": [],
+      "dangerous": ["zuus_thundergods_wrath", "zuus_lightning_bolt"]
+    },
+    "23": {
+      "name": "Kunkka",
+      "traits": ["passives"],
+      "dangerous": ["kunkka_ghostship", "kunkka_x_marks_the_spot"]
+    },
+    "25": {
+      "name": "Lina",
+      "traits": [],
+      "dangerous": ["lina_laguna_blade", "lina_light_strike_array"]
+    },
+    "26": { "name": "Lion", "traits": [], "dangerous": ["lion_finger_of_death", "lion_voodoo"] },
+    "27": {
+      "name": "Shadow Shaman",
+      "traits": ["summons"],
+      "dangerous": ["shadow_shaman_shackles", "shadow_shaman_voodoo"]
+    },
+    "28": {
+      "name": "Slardar",
+      "traits": ["bkbPierce", "passives"],
+      "dangerous": ["slardar_slithereen_crush", "slardar_amplify_damage"]
+    },
+    "29": { "name": "Tidehunter", "traits": ["passives"], "dangerous": ["tidehunter_ravage"] },
+    "30": {
+      "name": "Witch Doctor",
+      "traits": ["heal"],
+      "dangerous": ["witch_doctor_death_ward", "witch_doctor_paralyzing_cask"]
+    },
+    "31": { "name": "Lich", "traits": ["dispellableBuffs"], "dangerous": ["lich_chain_frost"] },
+    "32": {
+      "name": "Riki",
+      "traits": ["invisibility", "escape", "silence"],
+      "dangerous": ["riki_smoke_screen", "riki_tricks_of_the_trade"]
+    },
+    "33": {
+      "name": "Enigma",
+      "traits": ["summons", "bkbPierce"],
+      "dangerous": ["enigma_black_hole"]
+    },
+    "34": { "name": "Tinker", "traits": ["escape"], "dangerous": ["tinker_laser", "tinker_rearm"] },
+    "35": {
+      "name": "Sniper",
+      "traits": ["passives"],
+      "dangerous": ["sniper_assassinate", "sniper_shrapnel"]
+    },
+    "36": {
+      "name": "Necrophos",
+      "traits": ["heal", "dispellableBuffs"],
+      "dangerous": ["necrolyte_reapers_scythe"]
+    },
+    "37": {
+      "name": "Warlock",
+      "traits": ["heal", "summons", "bkbPierce"],
+      "dangerous": ["warlock_rain_of_chaos", "warlock_fatal_bonds"]
+    },
+    "38": {
+      "name": "Beastmaster",
+      "traits": ["summons", "bkbPierce"],
+      "dangerous": ["beastmaster_primal_roar"]
+    },
+    "39": {
+      "name": "Queen of Pain",
+      "traits": ["escape"],
+      "dangerous": ["queenofpain_sonic_wave", "queenofpain_scream_of_pain"]
+    },
+    "40": {
+      "name": "Venomancer",
+      "traits": ["summons"],
+      "dangerous": ["venomancer_noxious_plague"]
+    },
+    "41": {
+      "name": "Faceless Void",
+      "traits": ["escape", "passives", "bkbPierce"],
+      "dangerous": ["faceless_void_chronosphere"]
+    },
+    "42": {
+      "name": "Wraith King",
+      "traits": ["heal", "summons", "passives"],
+      "dangerous": ["skeleton_king_reincarnation", "skeleton_king_hellfire_blast"]
+    },
+    "43": {
+      "name": "Death Prophet",
+      "traits": ["heal", "silence"],
+      "dangerous": ["death_prophet_exorcism", "death_prophet_silence"]
+    },
+    "44": {
+      "name": "Phantom Assassin",
+      "traits": ["evasion", "escape", "passives"],
+      "dangerous": ["phantom_assassin_coup_de_grace"]
+    },
+    "45": {
+      "name": "Pugna",
+      "traits": ["heal"],
+      "dangerous": ["pugna_life_drain", "pugna_nether_ward"]
+    },
+    "46": {
+      "name": "Templar Assassin",
+      "traits": ["invisibility", "passives"],
+      "dangerous": ["templar_assassin_meld", "templar_assassin_refraction"]
+    },
+    "47": {
+      "name": "Viper",
+      "traits": ["passives"],
+      "dangerous": ["viper_viper_strike", "viper_nose_dive"]
+    },
+    "48": { "name": "Luna", "traits": ["passives"], "dangerous": ["luna_eclipse"] },
+    "49": {
+      "name": "Dragon Knight",
+      "traits": ["passives"],
+      "dangerous": ["dragon_knight_elder_dragon_form", "dragon_knight_dragon_tail"]
+    },
+    "50": {
+      "name": "Dazzle",
+      "traits": ["heal"],
+      "dangerous": ["dazzle_shallow_grave", "dazzle_nothl_projection"]
+    },
+    "51": {
+      "name": "Clockwerk",
+      "traits": ["bkbPierce"],
+      "dangerous": ["rattletrap_hookshot", "rattletrap_power_cogs"]
+    },
+    "52": {
+      "name": "Leshrac",
+      "traits": [],
+      "dangerous": ["leshrac_pulse_nova", "leshrac_split_earth"]
+    },
+    "53": {
+      "name": "Nature's Prophet",
+      "traits": ["summons", "escape"],
+      "dangerous": ["furion_wrath_of_nature", "furion_sprout"]
+    },
+    "54": {
+      "name": "Lifestealer",
+      "traits": ["heal"],
+      "dangerous": ["life_stealer_rage", "life_stealer_infest"]
+    },
+    "55": {
+      "name": "Dark Seer",
+      "traits": ["dispellableBuffs"],
+      "dangerous": ["dark_seer_vacuum", "dark_seer_wall_of_replica"]
+    },
+    "56": {
+      "name": "Clinkz",
+      "traits": ["invisibility", "escape", "summons"],
+      "dangerous": ["clinkz_burning_barrage", "clinkz_burning_army"]
+    },
+    "57": {
+      "name": "Omniknight",
+      "traits": ["heal"],
+      "dangerous": ["omniknight_guardian_angel", "omniknight_purification"]
+    },
+    "58": {
+      "name": "Enchantress",
+      "traits": ["heal", "summons"],
+      "dangerous": ["enchantress_impetus", "enchantress_untouchable"]
+    },
+    "59": {
+      "name": "Huskar",
+      "traits": ["heal", "passives"],
+      "dangerous": ["huskar_life_break", "huskar_inner_fire"]
+    },
+    "60": {
+      "name": "Night Stalker",
+      "traits": ["silence", "heal"],
+      "dangerous": ["night_stalker_void", "night_stalker_darkness"]
+    },
+    "61": {
+      "name": "Broodmother",
+      "traits": ["summons", "invisibility"],
+      "dangerous": ["broodmother_spawn_spiderlings", "broodmother_insatiable_hunger"]
+    },
+    "62": {
+      "name": "Bounty Hunter",
+      "traits": ["invisibility", "escape"],
+      "dangerous": ["bounty_hunter_track", "bounty_hunter_shuriken_toss"]
+    },
+    "63": {
+      "name": "Weaver",
+      "traits": ["invisibility", "escape", "passives"],
+      "dangerous": ["weaver_time_lapse", "weaver_the_swarm"]
+    },
+    "64": { "name": "Jakiro", "traits": [], "dangerous": ["jakiro_macropyre", "jakiro_ice_path"] },
+    "65": { "name": "Batrider", "traits": ["bkbPierce"], "dangerous": ["batrider_flaming_lasso"] },
+    "66": {
+      "name": "Chen",
+      "traits": ["summons", "heal"],
+      "dangerous": ["chen_hand_of_god", "chen_penitence"]
+    },
+    "67": {
+      "name": "Spectre",
+      "traits": ["illusions", "passives"],
+      "dangerous": ["spectre_haunt", "spectre_dispersion"]
+    },
+    "68": {
+      "name": "Ancient Apparition",
+      "traits": [],
+      "dangerous": ["ancient_apparition_ice_blast", "ancient_apparition_cold_feet"]
+    },
+    "69": {
+      "name": "Doom",
+      "traits": ["silence", "bkbPierce"],
+      "dangerous": ["doom_bringer_doom"]
+    },
+    "70": {
+      "name": "Ursa",
+      "traits": ["passives"],
+      "dangerous": ["ursa_enrage", "ursa_earthshock"]
+    },
+    "71": {
+      "name": "Spirit Breaker",
+      "traits": ["bkbPierce", "passives"],
+      "dangerous": ["spirit_breaker_charge_of_darkness", "spirit_breaker_nether_strike"]
+    },
+    "72": {
+      "name": "Gyrocopter",
+      "traits": [],
+      "dangerous": ["gyrocopter_call_down", "gyrocopter_flak_cannon"]
+    },
+    "73": {
+      "name": "Alchemist",
+      "traits": ["heal"],
+      "dangerous": ["alchemist_chemical_rage", "alchemist_unstable_concoction"]
+    },
+    "74": {
+      "name": "Invoker",
+      "traits": ["invisibility"],
+      "dangerous": ["invoker_cold_snap", "invoker_chaos_meteor"]
+    },
+    "75": {
+      "name": "Silencer",
+      "traits": ["silence", "bkbPierce"],
+      "dangerous": ["silencer_global_silence", "silencer_last_word"]
+    },
+    "76": {
+      "name": "Outworld Devourer",
+      "traits": [],
+      "dangerous": ["obsidian_destroyer_sanity_eclipse", "obsidian_destroyer_astral_imprisonment"]
+    },
+    "77": {
+      "name": "Lycan",
+      "traits": ["summons"],
+      "dangerous": ["lycan_shapeshift", "lycan_summon_wolves"]
+    },
+    "78": {
+      "name": "Brewmaster",
+      "traits": ["evasion"],
+      "dangerous": ["brewmaster_primal_split", "brewmaster_thunder_clap"]
+    },
+    "79": {
+      "name": "Shadow Demon",
+      "traits": [],
+      "dangerous": ["shadow_demon_disruption", "shadow_demon_demonic_purge"]
+    },
+    "80": {
+      "name": "Lone Druid",
+      "traits": ["summons"],
+      "dangerous": ["lone_druid_spirit_bear", "lone_druid_savage_roar"]
+    },
+    "81": {
+      "name": "Chaos Knight",
+      "traits": ["illusions", "passives"],
+      "dangerous": ["chaos_knight_phantasm", "chaos_knight_chaos_bolt"]
+    },
+    "82": { "name": "Meepo", "traits": ["escape"], "dangerous": ["meepo_earthbind", "meepo_poof"] },
+    "83": {
+      "name": "Treant Protector",
+      "traits": ["invisibility", "heal", "bkbPierce", "dispellableBuffs"],
+      "dangerous": ["treant_overgrowth"]
+    },
+    "84": {
+      "name": "Ogre Magi",
+      "traits": ["dispellableBuffs"],
+      "dangerous": ["ogre_magi_fireblast", "ogre_magi_bloodlust"]
+    },
+    "85": {
+      "name": "Undying",
+      "traits": ["summons", "heal"],
+      "dangerous": ["undying_flesh_golem", "undying_tombstone"]
+    },
+    "86": {
+      "name": "Rubick",
+      "traits": [],
+      "dangerous": ["rubick_telekinesis", "rubick_spell_steal"]
+    },
+    "87": {
+      "name": "Disruptor",
+      "traits": ["silence"],
+      "dangerous": ["disruptor_static_storm", "disruptor_kinetic_field"]
+    },
+    "88": {
+      "name": "Nyx Assassin",
+      "traits": ["invisibility"],
+      "dangerous": ["nyx_assassin_impale", "nyx_assassin_spiked_carapace"]
+    },
+    "89": {
+      "name": "Naga Siren",
+      "traits": ["illusions", "bkbPierce"],
+      "dangerous": ["naga_siren_song_of_the_siren", "naga_siren_ensnare"]
+    },
+    "90": {
+      "name": "Keeper of the Light",
+      "traits": [],
+      "dangerous": ["keeper_of_the_light_illuminate", "keeper_of_the_light_blinding_light"]
+    },
+    "91": {
+      "name": "Io",
+      "traits": ["heal", "dispellableBuffs"],
+      "dangerous": ["wisp_relocate", "wisp_tether"]
+    },
+    "92": {
+      "name": "Visage",
+      "traits": ["summons", "invisibility"],
+      "dangerous": ["visage_summon_familiars", "visage_soul_assumption"]
+    },
+    "93": {
+      "name": "Slark",
+      "traits": ["escape", "heal", "passives"],
+      "dangerous": ["slark_pounce", "slark_shadow_dance"]
+    },
+    "94": {
+      "name": "Medusa",
+      "traits": ["bkbPierce", "passives"],
+      "dangerous": ["medusa_stone_gaze", "medusa_split_shot"]
+    },
+    "95": {
+      "name": "Troll Warlord",
+      "traits": ["passives"],
+      "dangerous": ["troll_warlord_battle_trance", "troll_warlord_whirling_axes_melee"]
+    },
+    "96": {
+      "name": "Centaur Warrunner",
+      "traits": ["passives"],
+      "dangerous": ["centaur_hoof_stomp", "centaur_stampede"]
+    },
+    "97": {
+      "name": "Magnus",
+      "traits": ["bkbPierce"],
+      "dangerous": ["magnataur_reverse_polarity", "magnataur_skewer"]
+    },
+    "98": {
+      "name": "Timbersaw",
+      "traits": ["escape", "heal", "passives"],
+      "dangerous": ["shredder_chakram", "shredder_whirling_death"]
+    },
+    "99": {
+      "name": "Bristleback",
+      "traits": ["passives"],
+      "dangerous": ["bristleback_warpath", "bristleback_quill_spray"]
+    },
+    "100": {
+      "name": "Tusk",
+      "traits": ["bkbPierce"],
+      "dangerous": ["tusk_walrus_punch", "tusk_snowball"]
+    },
+    "101": {
+      "name": "Skywrath Mage",
+      "traits": ["silence"],
+      "dangerous": ["skywrath_mage_mystic_flare", "skywrath_mage_ancient_seal"]
+    },
+    "102": {
+      "name": "Abaddon",
+      "traits": ["heal", "dispellableBuffs"],
+      "dangerous": ["abaddon_borrowed_time", "abaddon_aphotic_shield"]
+    },
+    "103": {
+      "name": "Elder Titan",
+      "traits": [],
+      "dangerous": ["elder_titan_earth_splitter", "elder_titan_echo_stomp"]
+    },
+    "104": {
+      "name": "Legion Commander",
+      "traits": ["heal", "passives", "bkbPierce", "dispellableBuffs"],
+      "dangerous": ["legion_commander_duel"]
+    },
+    "105": {
+      "name": "Techies",
+      "traits": [],
+      "dangerous": ["techies_land_mines", "techies_suicide"]
+    },
+    "106": {
+      "name": "Ember Spirit",
+      "traits": ["escape", "dispellableBuffs"],
+      "dangerous": ["ember_spirit_sleight_of_fist", "ember_spirit_searing_chains"]
+    },
+    "107": {
+      "name": "Earth Spirit",
+      "traits": ["escape", "silence"],
+      "dangerous": ["earth_spirit_magnetize", "earth_spirit_boulder_smash"]
+    },
+    "108": {
+      "name": "Underlord",
+      "traits": [],
+      "dangerous": ["abyssal_underlord_pit_of_malice", "abyssal_underlord_firestorm"]
+    },
+    "109": {
+      "name": "Terrorblade",
+      "traits": ["illusions"],
+      "dangerous": ["terrorblade_sunder", "terrorblade_metamorphosis"]
+    },
+    "110": {
+      "name": "Phoenix",
+      "traits": ["escape", "bkbPierce"],
+      "dangerous": ["phoenix_supernova", "phoenix_sun_ray"]
+    },
+    "111": {
+      "name": "Oracle",
+      "traits": ["heal"],
+      "dangerous": ["oracle_false_promise", "oracle_fortunes_end"]
+    },
+    "112": {
+      "name": "Winter Wyvern",
+      "traits": ["heal", "bkbPierce", "dispellableBuffs"],
+      "dangerous": ["winter_wyvern_winters_curse", "winter_wyvern_cold_embrace"]
+    },
+    "113": {
+      "name": "Arc Warden",
+      "traits": ["dispellableBuffs"],
+      "dangerous": ["arc_warden_tempest_double", "arc_warden_magnetic_field"]
+    },
+    "114": {
+      "name": "Monkey King",
+      "traits": ["escape", "passives"],
+      "dangerous": ["monkey_king_wukongs_command", "monkey_king_boundless_strike"]
+    },
+    "119": {
+      "name": "Dark Willow",
+      "traits": ["escape"],
+      "dangerous": ["dark_willow_terrorize", "dark_willow_bramble_maze"]
+    },
+    "120": {
+      "name": "Pangolier",
+      "traits": ["escape"],
+      "dangerous": ["pangolier_gyroshell", "pangolier_swashbuckle"]
+    },
+    "121": {
+      "name": "Grimstroke",
+      "traits": ["dispellableBuffs"],
+      "dangerous": ["grimstroke_soul_chain", "grimstroke_ink_creature"]
+    },
+    "123": {
+      "name": "Hoodwink",
+      "traits": ["evasion", "escape"],
+      "dangerous": ["hoodwink_sharpshooter", "hoodwink_bushwhack"]
+    },
+    "126": {
+      "name": "Void Spirit",
+      "traits": ["escape"],
+      "dangerous": ["void_spirit_astral_step", "void_spirit_aether_remnant"]
+    },
+    "128": {
+      "name": "Snapfire",
+      "traits": [],
+      "dangerous": ["snapfire_mortimer_kisses", "snapfire_firesnap_cookie"]
+    },
+    "129": {
+      "name": "Mars",
+      "traits": ["passives"],
+      "dangerous": ["mars_arena_of_blood", "mars_spear"]
+    },
+    "131": { "name": "Ring Master", "traits": [], "dangerous": ["ringmaster_wheel"] },
+    "135": {
+      "name": "Dawnbreaker",
+      "traits": ["heal"],
+      "dangerous": ["dawnbreaker_solar_guardian", "dawnbreaker_fire_wreath"]
+    },
+    "136": {
+      "name": "Marci",
+      "traits": ["escape"],
+      "dangerous": ["marci_unleash", "marci_grapple"]
+    },
+    "137": {
+      "name": "Primal Beast",
+      "traits": ["bkbPierce"],
+      "dangerous": ["primal_beast_pulverize", "primal_beast_onslaught"]
+    },
+    "138": {
+      "name": "Muerta",
+      "traits": ["passives"],
+      "dangerous": ["muerta_pierce_the_veil", "muerta_dead_shot"]
+    },
+    "145": {
+      "name": "Kez",
+      "traits": ["escape"],
+      "dangerous": ["kez_raptor_dance", "kez_echo_slash"]
+    },
+    "155": { "name": "Largo", "traits": [], "dangerous": ["largo_amphibian_rhapsody"] }
+  }
+}

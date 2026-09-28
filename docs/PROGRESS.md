@@ -5,7 +5,8 @@
 ## Status saat ini (2026-09-28)
 
 - **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
-- **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer ada di branch `feat/stage-1`, menunggu review PR.
+- **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer sudah di-merge (PR #3 dan #4). Smoke test E2E ditunda atas keputusan pemilik.
+- **Tahap 2 (In-game):** selesai di branch `feat/stage-2`, menunggu review PR. Sebelum/ sesudah merge, pemilik perlu mengisi secret GitHub untuk sinkron harian (SETUP.md bagian G).
 
 ## Tahap 1: yang sudah dikerjakan
 
@@ -68,7 +69,43 @@ Kesimpulan:
 - Hasil lengkap tersimpan di `.data/backtest/last-result.json` (lokal, tidak di-commit). Jalankan ulang setiap ada patch besar.
 
 ## Belum dikerjakan dari Tahap 1
-- **Smoke test E2E dengan Playwright** (tugas 1.8).
+- **Smoke test E2E dengan Playwright** (tugas 1.8). Ditunda.
+
+## Tahap 2: yang sudah dikerjakan
+
+### Sinkron data hero harian
+- `npm run sync:hero-data` mengambil dari STRATZ: matchup, posisi, build item (full, starting, boots), dan tipe damage per hero, untuk 5 kelompok rank. Dari OpenDota: winrate per durasi game. Hasilnya disimpan di tabel `hero_data`.
+- Dijalankan GitHub Actions setiap hari pukul 02:15 UTC. Di Vercel aplikasi tidak memanggil STRATZ langsung (batas 2 IP per 15 menit). Di laptop, data yang belum ada diambil saat dibutuhkan.
+- Uji coba: 2 hero di 1 kelompok rank cukup 4 request STRATZ. Perkiraan sinkron penuh ±250 request STRATZ + ±127 request OpenDota, sekitar 10 menit.
+- Status sinkron terakhir tampil di /admin (baris *Hero data sync*).
+
+### Game Plan (`/live`)
+- Bisa dibuka dari draft (tombol "Start game plan", atau "Game plan with {hero}" di tiap saran pick), atau diisi manual.
+- Isi: item untuk melawan lineup musuh beserta alasannya, build biasa per fase (starting, boots, laning, mid, late) dengan waktu beli, kurva kekuatan kedua tim menurut durasi, komposisi damage musuh, dan skill musuh yang perlu diwaspadai.
+- Tombol "Got it?" menandai item yang sudah dibeli. Pilihan Behind/Even/Ahead mengubah urutan saran dan menambah tips. Game time menyorot fase yang sedang berjalan. Semua disimpan di URL.
+- Setelah hero dan musuh terisi, setelan dilipat supaya di HP hasilnya langsung terlihat.
+
+### Cheat sheet (`/heroes/[id]`)
+- Hero yang meng-counter (per kelompok rank), item yang membantu per peran, skill berbahaya, kapan hero paling kuat, item penting hero tersebut, dan hero yang lemah melawannya.
+- Dibuka dari halaman Heroes ("How to play against ...").
+
+### Data manual
+- `data/hero-traits.json`: 10 sifat untuk 127 hero, drafnya dari `npm run draft:hero-traits` lalu direview satu per satu. Hero yang paling perlu dicek pemilik: Ring Master dan Largo (hero baru, belum diberi sifat), serta hero yang sering dimainkan.
+- `data/counter-items.json`: 12 aturan item counter.
+- Cara update per patch: [PATCH_CHECKLIST.md](PATCH_CHECKLIST.md).
+
+### Lain-lain
+- Beranda: label "In development" diganti link ke tiap fitur. Menu navigasi mendapat "Game plan".
+- Link OpenDota/STRATZ di laporan match hanya untuk admin (PR #5).
+- Test: 71 unit test.
+
+## Temuan Tahap 2
+- **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).
+- STRATZ punya data pembelian item per menit (`itemFullPurchase`), starting items, boots, winrate per durasi (`stats` dengan `groupByTime`), dan rata-rata damage physical/magic/pure, stun, heal, serta invisible per hero. Semua per posisi per bracket.
+- **Flag `bkbpierce` OpenDota juga menandai serangan fisik** (mis. Coup de Grace PA, Focus Fire WR). Label "Goes through BKB" hanya ditampilkan untuk hero yang memang punya disable menembus BKB menurut `hero-traits.json`.
+- **Statistik item STRATZ mencakup periode lebih panjang daripada statistik posisi,** sehingga persentase pembeli sempat lewat 100%. Penyebutnya sekarang diambil yang terbesar.
+- **Winrate per durasi dari STRATZ hanya sampai menit 35.** Untuk kurva kekuatan dipakai data OpenDota (bin 5 menit sampai 60+).
+- **Statistik stun/disable STRATZ tidak konsisten** (Magnus hampir nol), jadi tidak dipakai untuk aturan item.
 
 ## Catatan lain
 - Node 20.18 masih jalan; upgrade ke 22 tetap disarankan.
