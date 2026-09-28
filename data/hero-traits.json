@@ -332,7 +332,7 @@
     },
     "74": {
       "name": "Invoker",
-      "traits": ["invisibility", "summons"],
+      "traits": ["invisibility"],
       "dangerous": ["invoker_cold_snap", "invoker_chaos_meteor"]
     },
     "75": {

@@ -3,6 +3,7 @@ import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
 import { isParsed } from "@/lib/match/analyze";
 import { recordUsage } from "@/lib/usage";
 import type {
+  AbilityConstant,
   DurationRow,
   HeroStat,
   ItemConstant,
@@ -111,6 +112,9 @@ export const opendota = {
     cached(`od:durations:${heroId}`, 12 * HOUR, () =>
       request<DurationRow[]>(`/heroes/${heroId}/durations`),
     ),
+
+  /** Konstanta skill (±1,3 MB). Tidak di-cache di sini; pemanggil menyimpan ringkasannya saja. */
+  abilities: () => request<Record<string, AbilityConstant>>("/constants/abilities"),
 
   items: () =>
     cached(

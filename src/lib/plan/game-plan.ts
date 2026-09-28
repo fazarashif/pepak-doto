@@ -133,13 +133,20 @@ export function buildGamePlan(input: {
         : null;
 
   const dangers: EnemyDanger[] = input.enemies
-    .map((heroId) => ({
-      heroId,
-      heroName: input.heroNames.get(heroId) ?? `Hero ${heroId}`,
-      abilities: (input.traits.heroes[String(heroId)]?.dangerous ?? [])
-        .map((k) => input.abilities.get(k))
-        .filter((a): a is AbilityInfo => Boolean(a)),
-    }))
+    .map((heroId) => {
+      const entry = input.traits.heroes[String(heroId)];
+      // Data OpenDota juga menandai serangan fisik sebagai "menembus BKB". Tanda ini hanya
+      // ditampilkan untuk hero yang memang punya disable menembus BKB (dicek manual).
+      const piercing = entry?.traits.includes("bkbPierce") ?? false;
+      return {
+        heroId,
+        heroName: input.heroNames.get(heroId) ?? `Hero ${heroId}`,
+        abilities: (entry?.dangerous ?? [])
+          .map((k) => input.abilities.get(k))
+          .filter((a): a is AbilityInfo => Boolean(a))
+          .map((a) => ({ ...a, bkbPierce: a.bkbPierce && piercing })),
+      };
+    })
     .filter((d) => d.abilities.length);
 
   return { curve, timing, switchMinute, summary, stateTip, dangers };

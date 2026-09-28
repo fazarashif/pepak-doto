@@ -22,6 +22,7 @@ export interface ItemInfo {
   cost: number;
   qual?: string;
   components: string[];
+  img?: string;
 }
 
 export interface CounterRule {
@@ -94,6 +95,10 @@ export interface Advice {
 }
 
 const PER_PHASE = 4;
+/** Satu aturan paling banyak menyumbang sekian item, supaya alasan yang sama tidak berulang. */
+const ITEMS_PER_RULE = 3;
+/** Perbandingan tepat waktu vs terlambat hanya berarti untuk item mahal. */
+const TIMING_MIN_COST = 2000;
 const MIN_BUILD_SHARE = 0.08;
 const MIN_ITEM_COST = 400;
 const EARLY_END = 12;
@@ -121,13 +126,14 @@ function toBuildEntry(b: BuildItem, item: ItemInfo, games: number, owned: Set<nu
     pts.reduce((acc, [, n, w]) => ({ n: acc.n + n, w: acc.w + w }), { n: 0, w: 0 });
   const early = sum(before);
   const late = sum(after);
+  const timed = item.cost >= TIMING_MIN_COST;
   return {
     item,
     share: Math.min(1, b.matches / Math.max(games, 1)),
     winRate: pct(b.wins, b.matches),
     medianMinute: b.medianMinute,
-    onTimeWinRate: early.n >= 50 ? pct(early.w, early.n) : null,
-    lateWinRate: late.n >= 50 ? pct(late.w, late.n) : null,
+    onTimeWinRate: timed && early.n >= 50 ? pct(early.w, early.n) : null,
+    lateWinRate: timed && late.n >= 50 ? pct(late.w, late.n) : null,
     owned: owned.has(item.id),
   };
 }
@@ -198,7 +204,9 @@ export function advise(input: AdvisorInput): Advice {
 
   const boots: BuildEntry[] = (build?.boots ?? [])
     .map((b) => ({ b, item: byId.get(b.itemId) }))
-    .filter((x) => x.item && x.b.matches / Math.max(games, 1) >= MIN_BUILD_SHARE)
+    // Boots of Speed biasa hanya komponen, bukan pilihan akhir.
+    .filter((x) => x.item && x.item.key !== "boots")
+    .filter((x) => x.b.matches / Math.max(games, 1) >= MIN_BUILD_SHARE)
     .map(({ b, item }) => ({
       item: item!,
       share: Math.min(1, b.matches / Math.max(games, 1)),
@@ -235,7 +243,7 @@ export function advise(input: AdvisorInput): Advice {
     if (input.state === "behind" && DEFENSIVE.has(rule.id)) weight += 0.5;
     if (input.state === "ahead" && OFFENSIVE.has(rule.id)) weight += 0.5;
 
-    for (const [rank, key] of rule.items[role].entries()) {
+    for (const [rank, key] of rule.items[role].slice(0, ITEMS_PER_RULE).entries()) {
       const item = input.items.get(key);
       if (!item) continue; // item dihapus di patch baru
       const entry = situational.get(key) ?? {

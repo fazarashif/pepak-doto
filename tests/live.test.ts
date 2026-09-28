@@ -296,6 +296,12 @@ describe("buildGamePlan", () => {
     ]);
   });
 
+  it("only flags BKB-piercing abilities for heroes checked to have such disables", () => {
+    // Coup de Grace ditandai "menembus BKB" di data OpenDota, tapi PA tidak punya trait bkbPierce.
+    const coup = plan(lateHero, lateHero).dangers[0].abilities[0];
+    expect(coup.bkbPierce).toBe(false);
+  });
+
   it("adds a tip when behind", () => {
     expect(plan(lateHero, lateHero, "behind" as never).stateTip).toMatch(/You're behind/);
   });

@@ -154,3 +154,11 @@ export interface DurationRow {
   games_played: number;
   wins: number;
 }
+
+export interface AbilityConstant {
+  dname?: string;
+  desc?: string;
+  behavior?: string | string[];
+  bkbpierce?: string;
+  dispellable?: string;
+}

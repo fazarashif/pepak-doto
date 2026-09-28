@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { CheckCircle, XCircle } from "@phosphor-icons/react/ssr";
+import { ArrowRight, CheckCircle, XCircle } from "@phosphor-icons/react/ssr";
 import { ChapterLabel, Divider, FramedPanel, MaskedSvg } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
 import { SteamSignIn } from "@/components/steam-sign-in";
@@ -90,7 +90,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 Enter the heroes picked so far. You get a short list of heroes that counter the
                 enemy lineup and fit your team, with the reason for each one.
               </p>
-              <StatusLabel />
+              <ChapterLink href="/draft">Open the draft assistant</ChapterLink>
             </div>
             {dire.length === 5 ? (
               <div className="grid gap-2" aria-hidden>
@@ -133,7 +133,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 </li>
               ))}
             </ul>
-            <StatusLabel />
+            <ChapterLink href="/live">Open the game plan</ChapterLink>
           </article>
 
           <article className="grid content-start gap-4 rounded-lg border border-border bg-surface p-6">
@@ -146,7 +146,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
               Paste a match ID to see how your laning, farm, deaths and item timings compare with
               other players on the same hero, and what to work on next.
             </p>
-            <StatusLabel />
+            <ChapterLink href="/match">Review a match</ChapterLink>
           </article>
         </div>
       </section>
@@ -198,11 +198,15 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   );
 }
 
-function StatusLabel() {
+function ChapterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <span className="w-fit rounded-sm border border-border px-2 py-0.5 text-xs text-muted">
-      In development
-    </span>
+    <Link
+      href={href}
+      className="flex w-fit items-center gap-1.5 text-sm font-medium text-accent-fg underline-offset-4 hover:underline"
+    >
+      {children}
+      <ArrowRight size={16} aria-hidden />
+    </Link>
   );
 }
 
