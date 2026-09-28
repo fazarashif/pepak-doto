@@ -58,16 +58,47 @@ Setelah mengubah `.env.local`, stop lalu jalankan ulang `npm run dev`.
 
 ## C. Membuat database Neon lewat Vercel
 
-1. Di project `pepak-doto` di Vercel, buka tab **Storage**.
-2. **Create Database → Neon (Serverless Postgres) → Continue**. Setujui syarat Neon kalau diminta.
-3. Pengaturan:
-   - **Region:** Singapore (`aws-ap-southeast-1`), paling dekat ke Indonesia.
-   - **Plan:** Free.
-   - **Database name:** `pepak-doto`.
-4. Saat menghubungkan ke project:
-   - Pilih environment **Production** dan **Preview** saja. **Jangan centang Development**, supaya laptop tetap memakai database lokal (PGlite) dan tidak menyentuh data production.
-   - Biarkan *prefix* kosong, supaya nama variabelnya `DATABASE_URL`.
-5. Samakan region server Vercel dengan database: **Settings → Functions → Function Region → Singapore (sin1)**.
+Istilah: yang disebut "Database" di Vercel adalah "Project" di Neon.
+
+**1. Masuk ke dashboard project**
+- Kalau Anda masih di halaman *pepak-doto – Deployment* (detail satu deploy), klik nama **pepak-doto** di breadcrumb kiri atas, atau tombol **Continue to Dashboard**.
+- Di dashboard project ada deretan tab di atas: *Overview, Deployments, Analytics, Logs, …, Storage, Settings*.
+
+**2. Mulai membuat database**
+- Klik tab **Storage**, lalu **Create Database**.
+- Muncul daftar penyedia dari Marketplace. Pilih **Neon** (Serverless Postgres), lalu **Continue**.
+
+**3. Akun Neon**
+- Pilih **Create New Neon Account** (akun Neon dibuat dan ditagihkan lewat Vercel, jadi tidak perlu daftar terpisah), lalu **Continue**.
+- Baca dan setujui syarat Neon.
+
+**4. Pengaturan database**
+| Pilihan | Isi |
+|---|---|
+| Region | **Singapore** (`aws-ap-southeast-1`) |
+| Plan | **Free** |
+| Database name | `pepak-doto` |
+| Auth / Neon Auth (kalau ada) | **Matikan**. Login kita memakai Steam |
+
+Klik **Create**. Tunggu beberapa detik sampai status database *Available*.
+
+**5. Hubungkan ke project** (dialog *Connect Project*; kalau tidak muncul otomatis, buka **Storage → pepak-doto → Connect Project**)
+| Pilihan | Isi |
+|---|---|
+| Project | `pepak-doto` |
+| Environments | Centang **Production** dan **Preview**. **Jangan centang Development**, supaya laptop tetap memakai database lokal |
+| Custom prefix | **Kosongkan**, supaya variabelnya bernama `DATABASE_URL` |
+| Advanced Options → Deployments Configuration | Biarkan **mati** untuk sekarang |
+
+Klik **Connect**.
+
+**6. Cek hasilnya**
+- Buka **Settings → Environment Variables**. Harus ada `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, dan beberapa `PG…`/`POSTGRES_…`. Semuanya dibuat otomatis; tidak perlu diubah.
+
+**7. Samakan region server**
+- **Settings → Functions → Function Region**, pilih **Singapore (sin1)**, lalu **Save**. Server dan database jadi berada di kota yang sama, sehingga halaman lebih cepat.
+
+Catatan: deploy *Preview* (misalnya dari PR) memakai database yang sama dengan production, tapi migrasi hanya dijalankan saat deploy production.
 
 ## D. Mengisi environment variable
 
