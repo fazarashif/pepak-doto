@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Privacy" };
 
 export default function PrivacyPage() {
   return (
-    <article className="mx-auto grid max-w-2xl gap-8 px-4 pt-10 leading-relaxed font-bold sm:px-6 [&_h2]:font-display [&_h2]:text-xl [&_h2]:tracking-tight [&_p]:text-muted [&_ul]:grid [&_ul]:list-disc [&_ul]:gap-1 [&_ul]:pl-5 [&_ul]:text-muted">
+    <article className="mx-auto grid max-w-2xl gap-8 px-4 pt-10 leading-relaxed sm:px-6 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_p]:text-muted [&_ul]:grid [&_ul]:list-disc [&_ul]:gap-1 [&_ul]:pl-5 [&_ul]:text-muted">
       <header className="grid gap-2">
         <h1 className="font-display text-3xl font-bold">Privacy</h1>
         <p className="text-sm">Last updated September 27, 2026</p>
