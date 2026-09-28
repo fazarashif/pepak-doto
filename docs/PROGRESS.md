@@ -6,7 +6,8 @@
 
 - **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
 - **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer sudah di-merge (PR #3 dan #4). Smoke test E2E ditunda atas keputusan pemilik.
-- **Tahap 2 (In-game):** selesai di branch `feat/stage-2`, menunggu review PR. Sebelum/ sesudah merge, pemilik perlu mengisi secret GitHub untuk sinkron harian (SETUP.md bagian G).
+- **Tahap 2 (In-game):** di-merge (PR #6). Sinkron data hero harian berjalan lewat GitHub Actions.
+- **Tahap 3 (Profil pemain):** rencana sudah dibahas (PRD 0.5, DEVELOPMENT_PLAN §7), menunggu review sebelum coding. Branch `feat/stage-3`.
 
 ## Tahap 1: yang sudah dikerjakan
 

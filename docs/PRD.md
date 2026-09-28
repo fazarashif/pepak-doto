@@ -3,13 +3,17 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.4 (2026-09-28) |
+| Versi | 0.5 (2026-09-28) |
 | Pemilik | Faza |
 | Dokumen terkait | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [PROGRESS.md](PROGRESS.md) |
 
 > **Filosofi nama.** *"Pepak"* dalam bahasa Jawa berarti lengkap atau menyeluruh. Pepak Doto membantu pemain memahami Dota lebih dalam: tidak hanya bermain, tetapi belajar dari gameplay, mengenali kesalahan, memahami pola, dan terus berkembang.
 
 **Riwayat perubahan**
+- **0.5:**
+  - Rincian F5–F8 untuk Tahap 3 (keputusan D26–D29).
+  - Profil bisa dilihat siapa saja lewat account ID; target latihan tetap butuh login.
+  - Parse replay otomatis untuk match baru user yang login.
 - **0.4:**
   - Rincian F3 (Game Plan di `/live`) dan F4 (cheat sheet) untuk Tahap 2.
   - Data item, durasi, dan tipe damage diambil dari STRATZ per posisi per bracket.
@@ -183,20 +187,51 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
   - build yang biasa dipakai hero tersebut, supaya tahu kapan item pentingnya jadi
 - **Tahap 2 hanya menampilkan data.** Tips tertulis dibuat dengan LLM di Tahap 4 dan disimpan per patch.
 
+### Halaman profil pemain (F5–F8)
+- **Alamat:** `/players/[accountId]`. Bisa dibuka siapa saja untuk akun yang datanya publik, termasuk tamu (D27). `/profile` tetap untuk pengaturan akun sendiri dan menautkan ke profil pemain milik user.
+- **Tab:** Trends, Heroes, Goals, Wards.
+- **Sumber data** tanpa parse replay:
+  - `/players/{id}/matches`: satu request untuk banyak match, berisi hero, K/D/A, GPM, XPM, LH, damage, durasi, party, dan rank rata-rata.
+  - `/benchmarks?hero_id=`: persentil per hero, di-cache.
+
+  Persentil tiap match dihitung sendiri dari dua sumber ini, jadi tidak perlu membuka detail tiap match.
+- **Penyimpanan:**
+  - Ringkasan match untuk user yang login disimpan di tabel `match_summaries` (dipakai target latihan).
+  - Akun lain (dibuka tamu) hanya di-cache sementara, supaya database tidak membengkak.
+- **Parse otomatis (D26):** cron harian meminta parse untuk match 7 hari terakhir milik user yang login dan belum di-parse, maksimal 10 match per user per hari. Data dari replay (LH@10, ward) masuk ke ringkasan setelah parse selesai.
+- **Match Turbo tidak ikut**, begitu juga match yang ditinggal (abandon).
+
 ### F5: Tren performa
-- Dari 20–50 match terakhir **(tanpa Turbo)**: grafik persentil GPM/XPM/LH, kematian, dan winrate per hero, posisi, dan durasi.
-- Mendeteksi **pola berulang**.
+- Dari **50 match terakhir** (bisa diganti ke 20) **tanpa Turbo** (D29):
+  - grafik persentil GPM, XPM, LH/menit, kematian/menit, dan damage/menit per match, dengan rata-rata bergerak
+  - winrate per hero, posisi, durasi game, dan solo/party
+- **Pola berulang**, dideteksi dengan aturan sederhana dan ditulis sebagai kalimat. Contoh:
+  - "Di game yang kalah, Anda mati rata-rata 2× lebih banyak."
+  - "Winrate Anda 38% di game lebih dari 40 menit."
+  - "Sebagai Pos 5 persentil GPM Anda bagus, tapi kematian tinggi."
+- Setiap pola disertai jumlah game yang mendasarinya. Pola dengan sampel terlalu kecil tidak ditampilkan.
 
 ### F6: Analisis hero pool
-- Membandingkan winrate pribadi dengan meta di bracket user, lalu membagi hero ke dalam 4 kuadran: *core*, *potential*, *trap*, *avoid*.
+- Membandingkan winrate pribadi (dihaluskan) dengan winrate meta hero tersebut di bracket user (data STRATZ hasil sinkron), lalu membagi hero ke 4 kuadran:
+  - *core*: sering dimainkan dan di atas meta
+  - *potential*: jarang dimainkan tapi di atas meta
+  - *trap*: sering dimainkan tapi di bawah meta
+  - *avoid*: jarang dan di bawah meta
 - Rekomendasi hero untuk difokuskan per posisi.
 
 ### F7: Target latihan
-- User memasang target (misalnya "LH@10 ≥ 50 dalam 10 game"), dicek otomatis dari match baru.
-- Disimpan di akun, jadi tersinkron antar perangkat.
+- **Hanya untuk user yang login.** Disimpan di akun (tabel `goals`), jadi sama di semua perangkat.
+- **Target bebas (D28):** user memilih metrik, arah (≥ atau ≤), angka, dan jumlah game. Contoh: "LH@10 ≥ 50 dalam 10 game", "Mati ≤ 6 dalam 5 game".
+- **Daftar metrik** tetap ditentukan aplikasi supaya bisa dicek otomatis:
+  - tanpa parse: kematian, K/D/A, GPM, XPM, LH/menit, damage/menit, winrate, dan persentil masing-masing
+  - butuh parse: LH@10, denies@10, observer dan sentry yang dipasang
+- **Pengecekan:** target dicek otomatis dari match baru (termasuk hero dan posisi kalau user membatasinya). Match yang belum di-parse tidak dihitung untuk metrik yang butuh parse.
+- **Tampilan:** progres (mis. "7 dari 10 game tercapai"), riwayat per match, dan status selesai.
 
 ### F8: Heatmap ward
-- Peta posisi ward dari riwayat user, ditambah analisis umur ward per match.
+- Peta posisi observer dan sentry dari `/players/{id}/wardmap` (agregat dari match yang sudah di-parse), bisa difilter observer/sentry.
+- Untuk match yang sudah di-parse: umur rata-rata ward dan berapa yang di-deward musuh.
+- Kalau match yang di-parse masih sedikit, tampil catatan jumlah match yang dipakai.
 
 ### F9: Narasi coaching dengan LLM
 - Mengubah hasil F2, F5, dan F4 menjadi paragraf saran.
@@ -333,6 +368,10 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D23 | Tips cheat sheet | Data saja di Tahap 2; tips tertulis dari LLM di Tahap 4 |
 | D24 | Sinkron STRATZ | GitHub Actions harian menulis ke Neon; secret `STRATZ_TOKEN` dan `DATABASE_URL` di GitHub |
 | D25 | Link sumber data | Link OpenDota/STRATZ di laporan match hanya untuk admin |
+| D26 | Parse otomatis | Cron harian meminta parse match 7 hari terakhir milik user yang login, maks 10 per user per hari |
+| D27 | Akses profil | Siapa saja bisa melihat profil akun publik lewat account ID (`/players/[id]`); target latihan butuh login |
+| D28 | Target latihan | Bebas: metrik (dari daftar), arah, angka, jumlah game |
+| D29 | Jumlah match tren | 50 terakhir (bisa 20), tanpa Turbo |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).

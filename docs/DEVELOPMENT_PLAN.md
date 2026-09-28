@@ -3,8 +3,11 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.4 (2026-09-28) |
+| Versi | 0.5 (2026-09-28) |
 | Terkait | [PRD.md](PRD.md), [PROGRESS.md](PROGRESS.md) |
+
+**Perubahan di 0.5:**
+- Rincian Tahap 3 (§7).
 
 **Perubahan di 0.4:**
 - Rincian Tahap 2 (§7), termasuk sinkron STRATZ harian lewat GitHub Actions.
@@ -259,13 +262,21 @@ Keputusan: D20–D24 di PRD §11.
 **Selesai bila:** dari draft yang lengkap, `/live` menampilkan build, item situasional dengan alasan, dan rencana permainan di HP tanpa memanggil STRATZ langsung; cheat sheet tampil untuk semua hero; sinkron harian berjalan di GitHub Actions.
 
 ### Tahap 3: Profil pemain
-| # | Tugas |
-|---|---|
-| 3.1 | Tabel `match_summaries`, `goals`; sinkron riwayat match (tanpa Turbo) |
-| 3.2 | Tren (F5) |
-| 3.3 | Hero pool (F6) |
-| 3.4 | Target latihan (F7) |
-| 3.5 | Heatmap ward (F8) |
+Keputusan: D26–D29 di PRD §11.
+
+| # | Tugas | Status |
+|---|---|---|
+| 3.1 | **Data match pemain.** `players/data.ts`: ambil 50–100 match terakhir dari `/players/{id}/matches` (sekali request, tanpa Turbo dan abandon), hitung persentil per match dari `/benchmarks` per hero (cache 24 jam). Tabel `match_summaries` untuk user yang login; akun lain hanya di-cache | ⬜ |
+| 3.2 | **Parse otomatis.** Cron harian: untuk user yang login dalam 14 hari terakhir, minta parse match 7 hari terakhir yang belum di-parse (maks 10/user/hari). Match yang sudah selesai di-parse diperkaya dengan LH@10, denies@10, observer/sentry | ⬜ |
+| 3.3 | Halaman `/players/[accountId]` dengan tab, pesan untuk akun privat, pencarian akun dari `/players`, dan tautan dari `/profile` dan match review | ⬜ |
+| 3.4 | **Tren (F5):** grafik persentil + rata-rata bergerak, tabel winrate per hero/posisi/durasi/party, `players/patterns.ts` (aturan pola berulang + ambang sampel). Unit test | ⬜ |
+| 3.5 | **Hero pool (F6):** `players/hero-pool.ts` (kuadran dengan winrate dihaluskan vs meta STRATZ di bracket pemain), saran per posisi. Unit test | ⬜ |
+| 3.6 | **Target latihan (F7):** tabel `goals` dan `goal_results`, katalog metrik (`players/metrics.ts`), form target bebas, pengecekan saat sinkron, tampilan progres. Unit test | ⬜ |
+| 3.7 | **Heatmap ward (F8):** peta dari `wardmap` (gambar peta + grid), filter observer/sentry, umur ward dari match yang di-parse | ⬜ |
+
+**Beban API (perkiraan):** buka profil = 1 request match + ±10 request benchmark (sekali per hero, lalu di-cache). Parse otomatis: maks 10 request per user aktif per hari. Dengan user awal sedikit, jauh di bawah 3.000/hari.
+
+**Selesai bila:** profil akun publik mana pun menampilkan tren, hero pool, dan heatmap; user yang login bisa membuat target bebas yang terisi otomatis dari match baru; match baru user yang login ikut di-parse tanpa klik manual.
 
 ### Tahap 4: Coaching LLM
 | # | Tugas |
