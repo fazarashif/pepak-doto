@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node scripts/migrate.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "backtest": "tsx scripts/backtest.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -43,6 +44,7 @@
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.11"
   },

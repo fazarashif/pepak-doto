@@ -69,7 +69,10 @@ export interface DraftResult {
   warnings: string[];
 }
 
-export const WEIGHTS = { counter: 1.0, synergy: 0.6, meta: 0.7, banThreat: 1.0, banMeta: 0.7 };
+// Dikalibrasi dengan `npm run backtest` (3.899 match publik, 5-fold cross-validation, 2026-09-28):
+// 1 / 0.2 / 0.5 memberi akurasi 56.3% dan AUC 0.591, sedikit di atas 1 / 0.6 / 0.7 (55.9%, 0.588).
+// Synergy ternyata lemah sebagai prediktor, jadi bobotnya kecil; meta paling kuat.
+export const WEIGHTS = { counter: 1.0, synergy: 0.2, meta: 0.5, banThreat: 1.0, banMeta: 0.7 };
 /** Semakin kecil sampel, semakin nilai ditarik ke nol. */
 const PAIR_SHRINK = 300;
 const META_SHRINK = 500;
@@ -119,6 +122,31 @@ export function positionShare(stats: PositionStat[] | undefined, position: numbe
   return total ? (stats[position - 1]?.matches ?? 0) / total : null;
 }
 
+/**
+ * Keunggulan hero melawan tiap musuh, dari tabel `vs` milik musuh itu (tandanya dibalik).
+ * Dipakai oleh `recommend` dan script backtest, supaya keduanya memakai rumus yang sama.
+ */
+export function counterAgainst(heroId: number, enemyIds: number[], data: DraftData) {
+  const items = enemyIds
+    .map((id) => {
+      const stat = data.matchups.get(id)?.vs.get(heroId);
+      return stat ? { id, value: -shrinkPair(stat) } : null;
+    })
+    .filter((x): x is { id: number; value: number } => x !== null);
+  return { mean: mean(items.map((i) => i.value)), items };
+}
+
+/** Synergy hero dengan tiap kawan, dari tabel `with` milik kawan itu. */
+export function synergyWith(heroId: number, allyIds: number[], data: DraftData) {
+  const items = allyIds
+    .map((id) => {
+      const stat = data.matchups.get(id)?.with.get(heroId);
+      return stat ? { id, value: shrinkPair(stat) } : null;
+    })
+    .filter((x): x is { id: number; value: number } => x !== null);
+  return { mean: mean(items.map((i) => i.value)), items };
+}
+
 export function recommend(input: DraftInput, data: DraftData): DraftResult {
   const byId = new Map(data.heroes.map((h) => [h.id, h]));
   const taken = new Set([...input.allies, ...input.enemies, ...input.bans]);
@@ -142,15 +170,12 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
 
     const reasons: Reason[] = [];
 
-    // Keunggulan melawan tiap musuh, dari tabel `vs` milik musuh itu (tandanya dibalik).
-    const vsEnemies = enemies
-      .map((e) => {
-        const stat = data.matchups.get(e.id)?.vs.get(hero.id);
-        return stat ? { hero: e, adv: -shrinkPair(stat) } : null;
-      })
-      .filter(Boolean) as { hero: HeroInfo; adv: number }[];
-    const counter = mean(vsEnemies.map((v) => v.adv));
-    const sortedVs = [...vsEnemies].sort((a, b) => b.adv - a.adv);
+    const vs = counterAgainst(hero.id, input.enemies, data);
+    const counter = vs.mean;
+    const sortedVs = vs.items
+      .map((i) => ({ hero: byId.get(i.id)!, adv: i.value }))
+      .filter((v) => v.hero)
+      .sort((a, b) => b.adv - a.adv);
     for (const v of sortedVs.slice(0, 2)) {
       if (v.adv >= 1)
         reasons.push({ kind: "counter", text: `Strong against ${v.hero.name} (${fmt(v.adv)})` });
@@ -163,14 +188,12 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
       });
     }
 
-    const withAllies = allies
-      .map((a) => {
-        const stat = data.matchups.get(a.id)?.with.get(hero.id);
-        return stat ? { hero: a, syn: shrinkPair(stat) } : null;
-      })
-      .filter(Boolean) as { hero: HeroInfo; syn: number }[];
-    const synergy = mean(withAllies.map((w) => w.syn));
-    const bestAlly = [...withAllies].sort((a, b) => b.syn - a.syn)[0];
+    const withAllies = synergyWith(hero.id, input.allies, data);
+    const synergy = withAllies.mean;
+    const bestAlly = withAllies.items
+      .map((i) => ({ hero: byId.get(i.id)!, syn: i.value }))
+      .filter((w) => w.hero)
+      .sort((a, b) => b.syn - a.syn)[0];
     if (bestAlly && bestAlly.syn >= 1) {
       reasons.push({
         kind: "synergy",
