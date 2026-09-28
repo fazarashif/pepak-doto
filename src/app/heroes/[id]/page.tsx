@@ -11,6 +11,10 @@ import { bracketFromRankTier, pct, type HeroInfo } from "@/lib/dota";
 import { getHeroes } from "@/lib/heroes";
 import type { ItemInfo, Role } from "@/lib/items/advisor";
 import { loadCheatSheet, type CheatSheetData } from "@/lib/live/data";
+import { heroTipsKey, storedAsResult, storedHeroTips } from "@/lib/llm/narratives";
+import type { HeroTips } from "@/lib/llm/prompts/hero-tips";
+import type { CoachResult } from "@/lib/llm/result";
+import { HeroTipsPanel } from "./hero-tips";
 import type { MatchupEntry } from "@/lib/plan/cheat-sheet";
 
 const BRACKET_CHOICES = [
@@ -66,6 +70,7 @@ export default async function HeroCheatSheetPage({
     failed = true;
   }
   if (!failed && !data) notFound();
+  const tips = data ? storedAsResult(await storedHeroTips(heroTipsKey(id, bracket))) : null;
 
   return (
     <div className="mx-auto grid max-w-4xl gap-10 px-4 pt-10 sm:px-6">
@@ -85,13 +90,23 @@ export default async function HeroCheatSheetPage({
           </p>
         </div>
       ) : (
-        <CheatSheetView data={data} bracket={bracket} />
+        <CheatSheetView data={data} bracket={bracket} tips={tips} signedIn={Boolean(user)} />
       )}
     </div>
   );
 }
 
-function CheatSheetView({ data, bracket }: { data: CheatSheetData; bracket: number }) {
+function CheatSheetView({
+  data,
+  bracket,
+  tips,
+  signedIn,
+}: {
+  data: CheatSheetData;
+  bracket: number;
+  tips: CoachResult<HeroTips> | null;
+  signedIn: boolean;
+}) {
   const { hero, sheet } = data;
   const byId = new Map(data.heroes.map((h) => [h.id, h]));
 
@@ -128,6 +143,15 @@ function CheatSheetView({ data, bracket }: { data: CheatSheetData; bracket: numb
           </Link>
         </div>
       </header>
+
+      <HeroTipsPanel
+        key={bracket}
+        heroId={hero.id}
+        heroName={hero.name}
+        bracket={bracket}
+        initial={tips}
+        signedIn={signedIn}
+      />
 
       <FramedPanel as="section" tab="Counters" className="grid gap-4 p-5 sm:p-6">
         <div className="grid gap-1">

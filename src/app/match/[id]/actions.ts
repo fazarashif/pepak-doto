@@ -1,6 +1,12 @@
 "use server";
 
+import { getCurrentUser } from "@/lib/auth/session";
+import { matchNotesSpec, toCoachResult } from "@/lib/llm/narratives";
+import type { MatchNotes } from "@/lib/llm/prompts/match-notes";
+import type { CoachResult } from "@/lib/llm/result";
+import { generateNarrative } from "@/lib/llm/router";
 import { isParsed } from "@/lib/match/analyze";
+import { buildReport, lookupMatch } from "@/lib/match/data";
 import { opendota } from "@/lib/opendota/client";
 
 function validId(matchId: number) {
@@ -26,5 +32,26 @@ export async function checkParsed(matchId: number): Promise<boolean> {
   } catch (err) {
     console.warn("[match] parse check failed", err);
     return false;
+  }
+}
+
+/** Coach's notes untuk satu pemain di match ini (butuh login). */
+export async function requestMatchNotes(
+  matchId: number,
+  slot: number,
+): Promise<CoachResult<MatchNotes>> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, message: "Sign in to get coaching notes." };
+  if (!validId(matchId) || !Number.isInteger(slot)) {
+    return { ok: false, message: "That match doesn't look right." };
+  }
+  try {
+    const lookup = await lookupMatch(matchId);
+    if (lookup.status !== "ok") return { ok: false, message: "This match can't be reviewed." };
+    const report = await buildReport(lookup.match, slot);
+    return toCoachResult(await generateNarrative(await matchNotesSpec(report), user.id));
+  } catch (err) {
+    console.error("[match] coaching notes failed", err);
+    return { ok: false, message: "Couldn't write notes right now. Try again in a minute." };
   }
 }
