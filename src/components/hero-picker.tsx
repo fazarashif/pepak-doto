@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useId, useMemo, useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MaskedSvg, Ribbon } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -70,7 +71,7 @@ export function HeroPicker({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. Pudge"
               autoComplete="off"
-              className="h-11 w-full rounded-lg border border-border bg-surface pr-3 pl-10 text-base placeholder:text-muted/80 focus:border-accent-fg focus:outline-none sm:text-sm"
+              className="h-11 w-full rounded-md border border-border bg-surface pr-3 pl-10 text-base placeholder:text-muted/80 focus:border-accent-fg focus:outline-none sm:text-sm"
             />
           </div>
         </div>
@@ -83,7 +84,7 @@ export function HeroPicker({
               aria-pressed={attr === f.value}
               onClick={() => setAttr(f.value)}
               className={cn(
-                "h-9 cursor-pointer rounded-lg border px-3 text-sm transition-colors",
+                "h-9 cursor-pointer rounded-full border px-3.5 text-sm transition-colors",
                 attr === f.value
                   ? "border-accent-fg bg-accent/15 text-fg"
                   : "border-border text-muted hover:bg-surface-2 hover:text-fg",
@@ -100,7 +101,8 @@ export function HeroPicker({
       </p>
 
       {visible.length === 0 ? (
-        <div className="grid justify-items-start gap-3 rounded-xl border border-dashed border-border p-6">
+        <div className="batik grid justify-items-start gap-3 overflow-hidden rounded-lg border border-border p-6">
+          <MaskedSvg src="/brand/empty-no-heroes.svg" className="h-32 w-48 text-accent" />
           <p className="text-sm text-muted">
             No hero matches &ldquo;{deferredQuery}&rdquo;
             {attr !== "any" ? " with this attribute" : ""}.
@@ -129,11 +131,15 @@ export function HeroPicker({
                   disabled={disabled}
                   aria-pressed={selected}
                   className={cn(
-                    "group grid w-full cursor-pointer gap-1 rounded-lg p-1 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40",
-                    selected && "bg-accent/15 ring-2 ring-accent-fg",
+                    "group relative grid w-full cursor-pointer gap-1 rounded-md p-1 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40",
+                    selected && "bg-accent-soft ring-2 ring-accent-fg",
                   )}
                 >
                   <HeroPortrait hero={hero} decorative />
+                  {/* Pita hanya untuk satu item per layar, jadi hanya saat satu hero dipilih. */}
+                  {selected && selectedIds.size === 1 ? (
+                    <Ribbon className="top-0 right-2 h-10 w-3" />
+                  ) : null}
                   <span className="truncate px-0.5 text-xs text-muted group-hover:text-fg">
                     {hero.name}
                   </span>

@@ -12,7 +12,7 @@ interface Props {
 }
 
 const selectClass =
-  "h-11 w-full rounded-lg border border-border bg-surface px-3 text-base focus:border-accent-fg focus:outline-none sm:text-sm";
+  "h-11 w-full rounded-md border border-border bg-surface px-3 text-base focus:border-accent-fg focus:outline-none sm:text-sm";
 
 export function PreferencesForm({ rankLabel, defaults }: Props) {
   const [state, action, pending] = useActionState<PreferencesState, FormData>(savePreferences, {
@@ -20,7 +20,7 @@ export function PreferencesForm({ rankLabel, defaults }: Props) {
   });
 
   return (
-    <form action={action} className="grid gap-5 rounded-xl border border-border bg-surface p-5">
+    <form action={action} className="grid gap-5 rounded-lg border border-border bg-surface p-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="grid gap-2">
           <label htmlFor="preferredBracket" className="text-sm font-medium">
@@ -71,7 +71,7 @@ export function PreferencesForm({ rankLabel, defaults }: Props) {
         <p aria-live="polite" className="flex items-center gap-1.5 text-sm">
           {state.status === "saved" ? (
             <>
-              <CheckCircle size={18} weight="fill" aria-hidden className="text-radiant" />
+              <CheckCircle size={18} weight="fill" aria-hidden className="text-accent-fg" />
               {state.message}
             </>
           ) : state.status === "error" ? (

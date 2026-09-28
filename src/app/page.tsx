@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { CheckCircle, SteamLogo, XCircle } from "@phosphor-icons/react/ssr";
+import { unstable_rethrow } from "next/navigation";
+import { CheckCircle, XCircle } from "@phosphor-icons/react/ssr";
+import { ChapterLabel, Divider, FramedPanel, MaskedSvg } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
+import { SteamSignIn } from "@/components/steam-sign-in";
 import { buttonStyles } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { assetUrl, type HeroInfo } from "@/lib/dota";
@@ -16,27 +19,29 @@ const ITEMS = [
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const [user, heroes, params] = await Promise.all([
     getCurrentUser(),
-    getMostPickedHeroes(19).catch(() => [] as HeroInfo[]),
+    getMostPickedHeroes(10).catch((err) => {
+      unstable_rethrow(err);
+      return [] as HeroInfo[];
+    }),
     searchParams,
   ]);
-  const mosaic = heroes.slice(0, 9);
-  const radiant = heroes.slice(9, 14);
-  const dire = heroes.slice(14, 19);
+  const radiant = heroes.slice(0, 5);
+  const dire = heroes.slice(5, 10);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
       {params.deleted ? (
         <p
           role="status"
-          className="mt-6 rounded-xl border border-border bg-surface px-4 py-3 text-sm"
+          className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-sm"
         >
           Your account and everything saved with it have been deleted.
         </p>
       ) : null}
 
-      <section className="grid items-center gap-12 pt-12 pb-16 md:pt-20 lg:grid-cols-[1.25fr_1fr] lg:gap-14">
-        <div className="rise-in grid max-w-2xl gap-6">
-          <h1 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance md:text-5xl xl:text-[3.5rem]">
+      <section className="grid items-center gap-8 pt-10 pb-12 md:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-10">
+        <div className="rise-in grid max-w-xl gap-6">
+          <h1 className="font-display text-4xl leading-[1.08] font-bold text-balance md:text-5xl xl:text-[3.5rem]">
             Get better at Dota, one match at a time.
           </h1>
           <p className="max-w-[46ch] text-lg leading-relaxed text-muted">
@@ -49,14 +54,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 Open your profile
               </Link>
             ) : (
-              <Link
-                href="/api/auth/steam"
-                prefetch={false}
-                className={buttonStyles({ size: "lg" })}
-              >
-                <SteamLogo size={20} weight="fill" aria-hidden />
-                Sign in with Steam
-              </Link>
+              <SteamSignIn size="lg" />
             )}
             <Link href="/heroes" className={buttonStyles({ variant: "secondary", size: "lg" })}>
               Browse heroes
@@ -64,49 +62,35 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           </div>
         </div>
 
-        {mosaic.length === 9 ? (
-          <figure className="grid gap-3">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {[0, 1, 2].map((col) => (
-                <div
-                  key={col}
-                  className={
-                    col === 1 ? "grid gap-2 sm:gap-3 lg:translate-y-6" : "grid gap-2 sm:gap-3"
-                  }
-                >
-                  {mosaic.slice(col * 3, col * 3 + 3).map((hero, i) => (
-                    <div
-                      key={hero.id}
-                      className="rise-in"
-                      style={{ "--i": col * 3 + i } as React.CSSProperties}
-                    >
-                      <HeroPortrait hero={hero} priority />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-            <figcaption className="text-sm text-muted lg:mt-6">
-              The most picked heroes in recent public matches, from OpenDota.
-            </figcaption>
-          </figure>
-        ) : null}
+        <div
+          role="img"
+          aria-label="An open field guide with the three-lane Dota map drawn in batik linework"
+          className="hero-banner rise-in -mx-4 sm:mx-0 sm:rounded-lg"
+          style={{ "--i": 2 } as React.CSSProperties}
+        />
       </section>
 
+      <Divider className="md:mx-auto md:block" />
+
       <section aria-labelledby="moments" className="py-16">
-        <h2 id="moments" className="max-w-[24ch] text-3xl font-semibold tracking-tight md:text-4xl">
+        <h2 id="moments" className="max-w-[24ch] font-display text-3xl font-bold md:text-4xl">
           Help at the three points where games are won or lost
         </h2>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3 md:grid-rows-[auto_auto]">
-          <article className="grid content-between gap-8 rounded-xl border border-border bg-surface p-6 md:col-span-2 md:row-span-2 md:p-8">
-            <div className="grid gap-3">
-              <StatusLabel />
-              <h3 className="text-2xl font-semibold tracking-tight">While you draft</h3>
-              <p className="max-w-[52ch] leading-relaxed text-muted">
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
+          <FramedPanel
+            as="article"
+            tab="Chapter I"
+            className="grid items-center gap-8 p-6 md:col-span-2 md:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
+          >
+            <div className="grid justify-items-start gap-3">
+              <MaskedSvg src="/brand/spot-draft.svg" className="mb-2 h-20 w-32 text-accent" />
+              <h3 className="font-display text-2xl font-bold">While you draft</h3>
+              <p className="max-w-[48ch] leading-relaxed text-muted">
                 Enter the heroes picked so far. You get a short list of heroes that counter the
                 enemy lineup and fit your team, with the reason for each one.
               </p>
+              <StatusLabel />
             </div>
             {dire.length === 5 ? (
               <div className="grid gap-2" aria-hidden>
@@ -115,7 +99,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                     <HeroPortrait key={hero.id} hero={hero} decorative />
                   ))}
                 </div>
-                <p className="text-center text-xs tracking-wide text-muted">vs</p>
+                <p className="text-center font-display text-sm text-muted italic">versus</p>
                 <div className="grid grid-cols-5 gap-2">
                   {dire.map((hero) => (
                     <HeroPortrait key={hero.id} hero={hero} decorative />
@@ -123,11 +107,14 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                 </div>
               </div>
             ) : null}
-          </article>
+          </FramedPanel>
 
-          <article className="grid gap-4 rounded-xl border border-border bg-surface-2 p-6">
-            <StatusLabel />
-            <h3 className="text-xl font-semibold tracking-tight">During the game</h3>
+          <article className="grid content-start gap-4 rounded-lg border border-border bg-surface p-6">
+            <div className="flex items-start justify-between gap-4">
+              <ChapterLabel>Chapter II</ChapterLabel>
+              <MaskedSvg src="/brand/spot-game.svg" className="h-16 w-24 text-accent" />
+            </div>
+            <h3 className="font-display text-xl font-bold">During the game</h3>
             <p className="leading-relaxed text-muted">
               Item suggestions based on the enemy heroes, plus when your team is strongest.
             </p>
@@ -141,30 +128,34 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
                     width={88}
                     height={64}
                     loading="lazy"
-                    className="h-10 w-auto rounded-lg"
+                    className="h-10 w-auto rounded-md"
                   />
                 </li>
               ))}
             </ul>
+            <StatusLabel />
           </article>
 
-          <article className="grid gap-4 rounded-xl border border-accent/30 bg-gradient-to-br from-accent/15 via-surface to-surface p-6">
-            <StatusLabel />
-            <h3 className="text-xl font-semibold tracking-tight">After the game</h3>
+          <article className="grid content-start gap-4 rounded-lg border border-border bg-surface p-6">
+            <div className="flex items-start justify-between gap-4">
+              <ChapterLabel>Chapter III</ChapterLabel>
+              <MaskedSvg src="/brand/spot-review.svg" className="h-16 w-24 text-accent" />
+            </div>
+            <h3 className="font-display text-xl font-bold">After the game</h3>
             <p className="leading-relaxed text-muted">
               Paste a match ID to see how your laning, farm, deaths and item timings compare with
               other players on the same hero, and what to work on next.
             </p>
+            <StatusLabel />
           </article>
         </div>
       </section>
 
-      <section
-        aria-labelledby="steam-data"
-        className="grid gap-10 border-t border-border py-16 lg:grid-cols-[1fr_1.2fr]"
-      >
+      <Divider className="md:mx-auto md:block" />
+
+      <section aria-labelledby="steam-data" className="grid gap-10 py-16 lg:grid-cols-[1fr_1.2fr]">
         <div className="grid content-start gap-4">
-          <h2 id="steam-data" className="text-3xl font-semibold tracking-tight">
+          <h2 id="steam-data" className="font-display text-3xl font-bold">
             What we get from your Steam account
           </h2>
           <p className="max-w-[52ch] leading-relaxed text-muted">
@@ -174,7 +165,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           </p>
           <Link
             href="/privacy"
-            className="text-sm text-accent-fg underline-offset-4 hover:underline"
+            className="w-fit text-sm text-accent-fg underline-offset-4 hover:underline"
           >
             Read the privacy policy
           </Link>
@@ -209,7 +200,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
 function StatusLabel() {
   return (
-    <span className="w-fit rounded-lg border border-border px-2 py-0.5 text-xs text-muted">
+    <span className="w-fit rounded-sm border border-border px-2 py-0.5 text-xs text-muted">
       In development
     </span>
   );
@@ -219,7 +210,7 @@ function DataList({ title, icon, items }: { title: string; icon: "yes" | "no"; i
   const Icon = icon === "yes" ? CheckCircle : XCircle;
   return (
     <div className="grid content-start gap-3">
-      <h3 className="font-medium">{title}</h3>
+      <h3 className="font-display text-lg font-bold">{title}</h3>
       <ul className="grid gap-2">
         {items.map((item) => (
           <li key={item} className="flex items-center gap-2 text-muted">
@@ -227,7 +218,7 @@ function DataList({ title, icon, items }: { title: string; icon: "yes" | "no"; i
               size={20}
               weight="fill"
               aria-hidden
-              className={icon === "yes" ? "text-radiant" : "text-muted"}
+              className={icon === "yes" ? "text-accent-fg" : "text-muted"}
             />
             {item}
           </li>

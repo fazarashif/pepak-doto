@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { FramedPanel, MaskedSvg } from "@/components/brand";
 import { HeroPicker } from "@/components/hero-picker";
 import { HeroPortrait } from "@/components/hero-portrait";
 import { ATTR_LABEL, BRACKETS, pct } from "@/lib/dota";
@@ -28,18 +29,20 @@ export function HeroBrowser({ heroes }: { heroes: HeroWithMeta[] }) {
         className="order-2 lg:order-1"
       />
 
-      <aside
-        aria-live="polite"
-        className="order-1 rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-24 lg:order-2"
-      >
-        {selected ? (
-          <HeroDetail hero={selected} />
-        ) : (
-          <p className="text-sm text-muted">
-            Select a hero from the list to see its win rate by rank.
-          </p>
-        )}
-      </aside>
+      <FramedPanel as="aside" className="order-1 p-6 lg:sticky lg:top-24 lg:order-2">
+        <div aria-live="polite">
+          {selected ? (
+            <HeroDetail hero={selected} />
+          ) : (
+            <div className="grid justify-items-start gap-3">
+              <MaskedSvg src="/brand/spot-draft.svg" className="h-24 w-36 text-accent" />
+              <p className="text-sm text-muted">
+                Select a hero from the list to see its win rate by rank.
+              </p>
+            </div>
+          )}
+        </div>
+      </FramedPanel>
     </div>
   );
 }
@@ -52,7 +55,7 @@ function HeroDetail({ hero }: { hero: HeroWithMeta }) {
     <div className="grid gap-5">
       <HeroPortrait hero={hero} decorative priority />
       <div className="grid gap-1">
-        <h2 className="text-xl font-semibold tracking-tight">{hero.name}</h2>
+        <h2 className="font-display text-xl font-bold">{hero.name}</h2>
         <p className="text-sm text-muted">
           {ATTR_LABEL[hero.primaryAttr]}, {hero.attackType.toLowerCase()}
         </p>
@@ -60,7 +63,7 @@ function HeroDetail({ hero }: { hero: HeroWithMeta }) {
 
       <ul className="flex flex-wrap gap-1.5" aria-label="Roles">
         {hero.roles.map((role) => (
-          <li key={role} className="rounded-lg bg-surface-2 px-2 py-1 text-xs">
+          <li key={role} className="rounded-md bg-surface-2 px-2 py-1 text-xs">
             {role}
           </li>
         ))}
@@ -71,7 +74,7 @@ function HeroDetail({ hero }: { hero: HeroWithMeta }) {
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
           {brackets.map((b, i) =>
             b.picks ? (
-              <div key={i} className="rounded-lg border border-border px-3 py-2">
+              <div key={i} className="rounded-md border border-border px-3 py-2">
                 <dt className="text-xs text-muted">{BRACKETS[i + 1].name}</dt>
                 <dd className="font-mono text-base tabular-nums">{pct(b.wins / b.picks)}</dd>
                 <dd className="font-mono text-xs text-muted tabular-nums">

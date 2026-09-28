@@ -76,15 +76,15 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto grid max-w-4xl gap-10 px-4 pt-10 sm:px-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Admin</h1>
+      <h1 className="font-display text-3xl font-bold">Admin</h1>
 
       <section aria-labelledby="services" className="grid gap-3">
-        <h2 id="services" className="text-lg font-semibold">
+        <h2 id="services" className="font-display text-lg font-bold">
           Services
         </h2>
         <ul className="grid gap-2 sm:grid-cols-2">
           {services.map((s) => (
-            <li key={s.name} className="flex gap-3 rounded-xl border border-border bg-surface p-4">
+            <li key={s.name} className="flex gap-3 rounded-lg border border-border bg-surface p-4">
               <StatusIcon status={s.status} />
               <div className="grid min-w-0 gap-0.5">
                 <p className="font-medium">{s.name}</p>
@@ -96,13 +96,13 @@ export default async function AdminPage() {
       </section>
 
       <section aria-labelledby="usage" className="grid gap-3">
-        <h2 id="usage" className="text-lg font-semibold">
+        <h2 id="usage" className="font-display text-lg font-bold">
           API requests, last 7 days
         </h2>
         {usage.length === 0 ? (
           <p className="text-sm text-muted">No requests recorded yet.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-2 text-left text-muted">
                 <tr>
@@ -141,7 +141,12 @@ export default async function AdminPage() {
 function StatusIcon({ status }: { status: Status }) {
   if (status === "ok") {
     return (
-      <CheckCircle size={22} weight="fill" className="shrink-0 text-radiant" aria-label="Working" />
+      <CheckCircle
+        size={22}
+        weight="fill"
+        className="shrink-0 text-accent-fg"
+        aria-label="Working"
+      />
     );
   }
   if (status === "error") {

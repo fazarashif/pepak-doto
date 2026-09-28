@@ -1,13 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Alegreya,
+  Alegreya_SC,
+  Atkinson_Hyperlegible_Mono,
+  Atkinson_Hyperlegible_Next,
+} from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const display = Alegreya({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-alegreya",
+});
+const displaySc = Alegreya_SC({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-alegreya-sc",
+});
+const sans = Atkinson_Hyperlegible_Next({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-atkinson",
+});
+const mono = Atkinson_Hyperlegible_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-atkinson-mono",
+});
 
 export const metadata: Metadata = {
   title: { default: "Pepak Doto", template: "%s | Pepak Doto" },
@@ -16,8 +40,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0c0c0e" },
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0d0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f4efe5" },
   ],
 };
 
@@ -26,13 +50,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${display.variable} ${displaySc.variable} ${sans.variable} ${mono.variable} h-full`}
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <a
             href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2"
           >
             Skip to content
           </a>

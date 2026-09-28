@@ -20,7 +20,7 @@ export function HeroPortrait({ hero, className, decorative = false, priority = f
       height={144}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
-      className={cn("aspect-[16/9] w-full rounded-lg bg-surface-2 object-cover", className)}
+      className={cn("aspect-[16/9] w-full rounded-md bg-surface-2 object-cover", className)}
     />
   );
 }

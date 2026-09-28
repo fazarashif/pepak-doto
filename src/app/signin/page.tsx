@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SteamLogo } from "@phosphor-icons/react/ssr";
-import { buttonStyles } from "@/components/ui/button";
+import { LogoSymbol } from "@/components/brand";
+import { SteamSignIn } from "@/components/steam-sign-in";
 import { safeNextPath } from "@/lib/auth/redirect";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -24,39 +24,37 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
   const error = typeof params.error === "string" ? ERRORS[params.error] : undefined;
 
   return (
-    <div className="mx-auto grid max-w-md gap-6 px-4 pt-16 sm:px-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
+    <div className="batik batik-truntum batik-reveal px-4 py-12 sm:py-20">
+      <div className="mx-auto grid max-w-md gap-6 rounded-lg border border-border bg-surface p-6 shadow-2 sm:p-8">
+        <div className="flex items-center gap-3">
+          <LogoSymbol className="size-10" />
+          <h1 className="font-display text-3xl font-bold">Sign in</h1>
+        </div>
 
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
-        >
-          {error}
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        <p className="leading-relaxed text-muted">
+          You&apos;ll be sent to Steam to confirm it&apos;s you. We never see your password. Steam
+          only tells us your Steam ID, which we use to find your public Dota matches.
         </p>
-      ) : null}
 
-      <p className="leading-relaxed text-muted">
-        You&apos;ll be sent to Steam to confirm it&apos;s you. We never see your password. Steam
-        only tells us your Steam ID, which we use to find your public Dota matches.
-      </p>
+        <SteamSignIn next={next} size="lg" />
 
-      <Link
-        href={`/api/auth/steam?next=${encodeURIComponent(next)}`}
-        prefetch={false}
-        className={buttonStyles({ size: "lg" })}
-      >
-        <SteamLogo size={20} weight="fill" aria-hidden />
-        Sign in with Steam
-      </Link>
-
-      <p className="text-sm text-muted">
-        You can use the draft assistant and match review without an account. See the{" "}
-        <Link href="/privacy" className="text-accent-fg underline-offset-4 hover:underline">
-          privacy policy
-        </Link>{" "}
-        for what we store.
-      </p>
+        <p className="text-sm text-muted">
+          You can use the draft assistant and match review without an account. See the{" "}
+          <Link href="/privacy" className="text-accent-fg underline-offset-4 hover:underline">
+            privacy policy
+          </Link>{" "}
+          for what we store.
+        </p>
+      </div>
     </div>
   );
 }

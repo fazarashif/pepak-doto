@@ -4,38 +4,70 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
-  Token warna. Satu aksen (emas), netral zinc.
-  Radiant/Dire hanya untuk data tim, bukan dekorasi.
-  Sudut: kontrol dan gambar 8px (rounded-lg), panel 12px (rounded-xl).
+  Token dari design/claude-design/tokens (v0.1). Lihat design/claude-design/USAGE.md.
+  - Aksen emas (batik prada). Di permukaan terang, teks memakai --accent-fg, bukan --accent.
+  - Radiant/Dire hanya untuk data tim. Sukses memakai --accent-fg.
+  - Sogan dan wedel hanya untuk permukaan besar dan ilustrasi, bukan teks.
+  - Tanpa gradien, glass, atau blur.
 */
 :root {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
-  --surface-2: #efeff1;
-  --border: #dcdce2;
-  --fg: #17171a;
-  --muted: #55555e;
-  --accent: #e3a93b;
-  --accent-fg: #8a5a0c;
-  --on-accent: #1b1305;
-  --radiant: #047857;
-  --dire: #b91c1c;
-  --danger: #b91c1c;
+  --bg: #f4efe5;
+  --surface: #fbf8f2;
+  --surface-2: #ece5d6;
+  --border: #d5c9b3;
+  --border-strong: #8f7d62;
+  --fg: #1e1912;
+  --muted: #5f5546;
+  --accent: #c8952e;
+  --accent-fg: #83580f;
+  --on-accent: #1a1206;
+  --accent-soft: #f1e3c2;
+  --radiant: #1a6e44;
+  --dire: #b2362c;
+  --danger: #a3401a;
+  --sogan: #7a4a2a;
+  --sogan-deep: #5c3a22;
+  --wedel: #2f4068;
+  --wedel-deep: #1e2a48;
+  --pattern-opacity: 0.07;
+  --shadow-1: 0 1px 0 0 rgba(58, 39, 24, 0.08);
+  --shadow-2: 0 10px 24px -14px rgba(58, 39, 24, 0.28);
+  --shadow-3: 0 24px 48px -20px rgba(58, 39, 24, 0.35), 0 0 0 1px #d5c9b3;
+  --ease-page: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-ribbon: 420ms;
+  --dur-reveal: 900ms;
 }
 
 .dark {
-  --bg: #0c0c0e;
-  --surface: #141417;
-  --surface-2: #1c1c21;
-  --border: #2a2a31;
-  --fg: #f2f2f3;
-  --muted: #a3a3ad;
-  --accent: #e3a93b;
-  --accent-fg: #ebb85a;
-  --on-accent: #1b1305;
-  --radiant: #34d399;
-  --dire: #f87171;
-  --danger: #f87171;
+  --bg: #0f0d0a;
+  --surface: #17140f;
+  --surface-2: #211c15;
+  --border: #3a3226;
+  --border-strong: #76634c;
+  --fg: #f2ecdf;
+  --muted: #ada38f;
+  --accent: #d6a640;
+  --accent-fg: #e4bb5e;
+  --on-accent: #1a1206;
+  --accent-soft: #2a2213;
+  --radiant: #5fc592;
+  --dire: #ee7468;
+  --danger: #f2845c;
+  --sogan: #8a5a36;
+  --sogan-deep: #2e1f14;
+  --wedel: #34466e;
+  --wedel-deep: #182038;
+  --pattern-opacity: 0.06;
+  --shadow-1: 0 1px 0 0 rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 10px 24px -14px rgba(0, 0, 0, 0.8);
+  --shadow-3: 0 24px 48px -20px rgba(0, 0, 0, 0.85), 0 0 0 1px #3a3226;
+}
+
+/* Satu sistem sudut: sm 4px (badge, tag), md 6px (kontrol, input, potret), lg 10px (panel, dialog). */
+@theme {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
 }
 
 @theme inline {
@@ -43,16 +75,25 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
   --color-radiant: var(--radiant);
   --color-dire: var(--dire);
   --color-danger: var(--danger);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sogan: var(--sogan);
+  --color-wedel: var(--wedel);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --font-display: var(--font-alegreya), Georgia, serif;
+  --font-display-sc: var(--font-alegreya-sc), Georgia, serif;
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+  --font-mono: var(--font-atkinson-mono), ui-monospace, monospace;
 }
 
 @layer base {
@@ -65,7 +106,7 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
@@ -79,11 +120,65 @@
   }
 }
 
-/* Masuk halus untuk konten di atas lipatan; mati kalau user memilih reduced motion. */
+/*
+  Pola batik sebagai tekstur. File SVG satu warna dipakai sebagai mask, jadi warnanya ikut --accent.
+  Jangan dipasang di belakang tabel, statistik, atau teks lebih dari dua baris.
+*/
+.batik {
+  position: relative;
+  isolation: isolate;
+}
+.batik::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  opacity: var(--pattern-opacity);
+  -webkit-mask: var(--pattern, url(/brand/pattern-kawung.svg)) 0 0 / var(--pattern-size, 40px)
+    repeat;
+  mask: var(--pattern, url(/brand/pattern-kawung.svg)) 0 0 / var(--pattern-size, 40px) repeat;
+  pointer-events: none;
+}
+.batik-parang {
+  --pattern: url(/brand/pattern-parang.svg);
+}
+.batik-truntum {
+  --pattern: url(/brand/pattern-truntum.svg);
+  --pattern-size: 32px;
+}
+
+/* Banner beranda sebagai background supaya browser hanya mengunduh versi tema dan ukuran yang aktif. */
+.hero-banner {
+  background: url(/brand/hero-banner-mobile-light.webp) center / cover no-repeat;
+  aspect-ratio: 1080 / 1350;
+}
+.dark .hero-banner {
+  background-image: url(/brand/hero-banner-mobile-dark.webp);
+}
+@media (min-width: 640px) {
+  /* Gambar punya margin lebar di sekitar buku; sedikit diperbesar supaya bukunya mengisi kolom. */
+  .hero-banner {
+    background-image: url(/brand/hero-banner-desktop-light.webp);
+    background-size: 118% auto;
+    aspect-ratio: 2 / 1;
+  }
+  .dark .hero-banner {
+    background-image: url(/brand/hero-banner-desktop-dark.webp);
+  }
+}
+
+/* Gerak hanya kalau user tidak memilih reduced motion. Tidak ada yang berulang. */
 @media (prefers-reduced-motion: no-preference) {
   .rise-in {
-    animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: rise-in 0.6s var(--ease-page) both;
     animation-delay: calc(var(--i, 0) * 60ms);
+  }
+  .ribbon-in {
+    animation: ribbon-in var(--dur-ribbon) var(--ease-page) both;
+  }
+  .batik-reveal::before {
+    animation: pattern-reveal var(--dur-reveal) var(--ease-page) both;
   }
 }
 
@@ -95,5 +190,25 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes ribbon-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pattern-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--pattern-opacity);
   }
 }
