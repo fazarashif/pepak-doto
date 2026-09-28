@@ -4,7 +4,7 @@ import { notFound, unstable_rethrow } from "next/navigation";
 import { MaskedSvg } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
 import { buttonStyles } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser, isAdmin } from "@/lib/auth/session";
 import type { HeroInfo } from "@/lib/dota";
 import { getHeroes } from "@/lib/heroes";
 import { buildReport, lookupMatch, type MatchLookup } from "@/lib/match/data";
@@ -68,7 +68,7 @@ export default async function MatchReportPage({ params, searchParams }: PageProp
 
   return (
     <div className="mx-auto grid max-w-5xl gap-8 px-4 pt-10 sm:px-6">
-      <ReportView report={report} heroes={heroes} />
+      <ReportView report={report} heroes={heroes} showSourceLinks={isAdmin(user)} />
       {!report.parsed ? <ParsePanel matchId={match.match_id} startTime={match.start_time} /> : null}
     </div>
   );
