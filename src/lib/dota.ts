@@ -50,6 +50,21 @@ export function bracketName(id: number) {
   return BRACKETS.find((b) => b.id === id)?.name ?? "Semua rank";
 }
 
+/** STRATZ mengelompokkan rank berpasangan; label ini dipakai di teks alasan draft. */
+export function bracketGroupLabel(bracket: number) {
+  if (bracket === 1 || bracket === 2) return "Herald and Guardian";
+  if (bracket === 3 || bracket === 4) return "Crusader and Archon";
+  if (bracket === 5 || bracket === 6) return "Legend and Ancient";
+  if (bracket === 7 || bracket === 8) return "Divine and Immortal";
+  return "all ranks";
+}
+
+/** Bracket 1..8 dari rank_tier OpenDota, atau 0 kalau tidak diketahui. */
+export function bracketFromRankTier(rankTier?: number | null) {
+  const b = rankTier ? Math.floor(rankTier / 10) : 0;
+  return b >= 1 && b <= 8 ? b : 0;
+}
+
 /** rank_tier OpenDota: puluhan = bracket (1 Herald .. 8 Immortal), satuan = bintang. */
 export function rankTierLabel(rankTier?: number | null) {
   if (!rankTier) return "Unranked";

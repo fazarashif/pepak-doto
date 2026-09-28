@@ -96,4 +96,52 @@ export const stratz = {
       { persist: true },
     );
   },
+
+  /** Jumlah match dan kemenangan tiap hero per posisi (1..5) di satu bracket. */
+  heroPositions: (bracket: number) => {
+    const b = toStratzBracket(bracket);
+    return cached(
+      `stratz:positions:${b}`,
+      24 * HOUR,
+      async () => {
+        const data = await gql<{ heroStats: { stats: HeroPositionRow[] | null } }>(POSITION_QUERY, {
+          brackets: b === "ALL" ? null : [b],
+        });
+        return (data.heroStats.stats ?? []).map((r) => ({
+          heroId: r.heroId,
+          position: Number(r.position.replace("POSITION_", "")),
+          matchCount: r.matchCount,
+          winCount: r.winCount,
+        }));
+      },
+      { persist: true },
+    );
+  },
 };
+
+interface HeroPositionRow {
+  heroId: number;
+  position: string; // "POSITION_1".."POSITION_5"
+  matchCount: number;
+  winCount: number;
+}
+
+export interface HeroPositionStat {
+  heroId: number;
+  position: number;
+  matchCount: number;
+  winCount: number;
+}
+
+const POSITION_QUERY = /* GraphQL */ `
+  query HeroPositions($brackets: [RankBracketBasicEnum]) {
+    heroStats {
+      stats(bracketBasicIds: $brackets, groupByPosition: true) {
+        heroId
+        position
+        matchCount
+        winCount
+      }
+    }
+  }
+`;
