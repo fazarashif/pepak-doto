@@ -17,18 +17,21 @@ export const HERO_TRAITS = [
 
 export type HeroTrait = (typeof HERO_TRAITS)[number];
 
-/** Dipakai di kalimat alasan, mis. "Phantom Assassin has evasion". */
-export const TRAIT_PHRASE: Record<HeroTrait, string> = {
-  illusions: "makes illusions",
-  summons: "fights with summoned units",
-  evasion: "has evasion",
-  heal: "heals a lot",
-  invisibility: "can turn invisible",
-  silence: "has silences",
-  escape: "is hard to catch",
-  dispellableBuffs: "relies on buffs that can be dispelled",
-  passives: "relies on passive abilities",
-  bkbPierce: "has disables that go through BKB",
+/** Dipakai di kalimat alasan, mis. "Phantom Assassin has evasion" / "PA and WR have evasion". */
+export const TRAIT_PHRASE: Record<HeroTrait, { one: string; many: string }> = {
+  illusions: { one: "makes illusions", many: "make illusions" },
+  summons: { one: "fights with summoned units", many: "fight with summoned units" },
+  evasion: { one: "has evasion", many: "have evasion" },
+  heal: { one: "heals a lot", many: "heal a lot" },
+  invisibility: { one: "can turn invisible", many: "can turn invisible" },
+  silence: { one: "has silences", many: "have silences" },
+  escape: { one: "is hard to catch", many: "are hard to catch" },
+  dispellableBuffs: {
+    one: "relies on buffs that can be dispelled",
+    many: "rely on buffs that can be dispelled",
+  },
+  passives: { one: "relies on passive abilities", many: "rely on passive abilities" },
+  bkbPierce: { one: "has disables that go through BKB", many: "have disables that go through BKB" },
 };
 
 export interface HeroTraitEntry {
