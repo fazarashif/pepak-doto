@@ -162,3 +162,9 @@ export interface AbilityConstant {
   bkbpierce?: string;
   dispellable?: string;
 }
+
+/** { x: { y: jumlah } } dengan koordinat grid 64..192. */
+export interface WardMap {
+  obs: Record<string, Record<string, number>>;
+  sen: Record<string, Record<string, number>>;
+}

@@ -9,6 +9,7 @@ const LINKS: NavLink[] = [
   { href: "/draft", label: "Draft" },
   { href: "/live", label: "Game plan" },
   { href: "/match", label: "Match review" },
+  { href: "/players", label: "Players" },
   { href: "/heroes", label: "Heroes" },
 ];
 

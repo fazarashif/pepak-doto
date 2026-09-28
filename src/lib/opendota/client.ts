@@ -1,9 +1,11 @@
 import "server-only";
 import { cached, HOUR, invalidate, MINUTE } from "@/lib/cache";
 import { isParsed } from "@/lib/match/analyze";
+import { MATCH_FIELDS, type HeroBenchmarks, type RawPlayerMatch } from "@/lib/players/summary";
 import { recordUsage } from "@/lib/usage";
 import type {
   AbilityConstant,
+  WardMap,
   DurationRow,
   HeroStat,
   ItemConstant,
@@ -85,6 +87,35 @@ export const opendota = {
   recentMatches: (accountId: number) =>
     cached(`od:recent:${accountId}`, 5 * MINUTE, () =>
       request<RecentMatch[]>(`/players/${accountId}/recentMatches`),
+    ),
+
+  /**
+   * Match terakhir seorang pemain dengan field ringkasan. Filter bawaan OpenDota sudah
+   * membuang mode non-standar seperti Turbo. `days` membatasi ke N hari terakhir.
+   */
+  playerMatches: (accountId: number, limit: number, days?: number) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (days) params.set("date", String(days));
+    for (const f of MATCH_FIELDS) params.append("project", f);
+    return cached(`od:playerMatches:${accountId}:${limit}:${days ?? 0}`, 5 * MINUTE, () =>
+      request<RawPlayerMatch[]>(`/players/${accountId}/matches?${params}`),
+    );
+  },
+
+  /** Posisi ward pemain (agregat dari match yang sudah di-parse), grid 64..192. */
+  wardmap: (accountId: number) =>
+    cached(`od:wardmap:${accountId}`, 30 * MINUTE, () =>
+      request<WardMap>(`/players/${accountId}/wardmap`),
+    ),
+
+  /** Persentil statistik per hero (semua rank). Berubah pelan, jadi di-cache lama. */
+  benchmarks: (heroId: number) =>
+    cached(
+      `od:benchmarks:${heroId}`,
+      24 * HOUR,
+      async () =>
+        (await request<{ result: HeroBenchmarks }>(`/benchmarks?hero_id=${heroId}`)).result,
+      persist,
     ),
 
   // Match yang sudah di-parse tidak akan berubah; yang belum di-parse dicek ulang tiap menit.
