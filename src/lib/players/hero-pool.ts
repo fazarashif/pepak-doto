@@ -36,6 +36,8 @@ export interface PoolHero {
   quadrant: Quadrant;
   /** Posisi yang biasa dimainkan hero ini (1..5). */
   positions: number[];
+  /** Porsi game hero ini per posisi (index 0 = posisi 1). */
+  positionShare: number[];
 }
 
 export interface HeroPool {
@@ -82,6 +84,7 @@ export function buildHeroPool(
         metaWinRate,
         edge,
         quadrant,
+        positionShare: m.byPos.map((n) => (posTotal ? n / posTotal : 0)),
         positions: m.byPos
           .map((n, i) => ({ pos: i + 1, share: posTotal ? n / posTotal : 0 }))
           .filter((x) => x.share >= MIN_POSITION_SHARE)
@@ -104,7 +107,12 @@ export function buildHeroPool(
       .filter(
         (h) => (h.quadrant === "core" || h.quadrant === "potential") && h.positions.includes(pos),
       )
-      .sort((a, b) => b.edge * Math.log1p(b.games) - a.edge * Math.log1p(a.games))
+      // Hero yang memang dimainkan di posisi ini lebih diutamakan.
+      .sort(
+        (a, b) =>
+          b.edge * Math.log1p(b.games) * b.positionShare[pos - 1] -
+          a.edge * Math.log1p(a.games) * a.positionShare[pos - 1],
+      )
       .slice(0, 3);
   }
 

@@ -2,7 +2,7 @@
 
 Pepak Doto is a web app for Dota 2 players who want to get better at the game. "Pepak" is Javanese for complete or thorough. The idea is to help you learn from your own games: spot the mistakes you keep making, understand why a draft or an item worked, and track whether you're actually improving.
 
-The draft assistant, the game plan, hero cheat sheets and match review work today. Player profile features and coaching notes are next.
+The draft assistant, the game plan, hero cheat sheets, match review and player profiles work today. Coaching notes are next.
 
 ## What it does
 
@@ -11,9 +11,10 @@ The draft assistant, the game plan, hero cheat sheets and match review work toda
 - Hero cheat sheets. For any hero: who counters it, which items help, the abilities to watch and when it peaks.
 - Post-match review. Paste a match ID and get a breakdown of your laning, farm, deaths, item timings and vision compared with other players on the same hero, plus the three things most worth fixing.
 
+- Player profiles. For any account with public match data: trends across the last 20 or 50 matches with the patterns that keep showing up, a hero pool split into heroes to keep, try more, or drop, and a ward map. Signed-in players can set their own practice goals, which fill in from new matches, and their new matches get sent for replay parsing every day.
+
 Coming later:
 
-- Player profile. Trends across your recent matches, a look at your hero pool, practice goals that update after each game, and a ward heatmap.
 - Coaching notes written by an LLM, based only on the numbers the app has already computed.
 
 Turbo matches are not analyzed.

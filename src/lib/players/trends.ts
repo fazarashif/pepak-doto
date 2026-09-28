@@ -10,6 +10,17 @@ export const METRIC_LABEL: Record<PctMetric, string> = {
   damagePerMin: "Hero damage",
 };
 
+/** Awal kalimat pola per metrik (deathsPerMin punya kalimat sendiri). */
+const METRIC_SUBJECT: Record<PctMetric, string> = {
+  gpm: "Your GPM is",
+  xpm: "Your XPM is",
+  lhPerMin: "Your last hits per minute are",
+  deathsPerMin: "",
+  damagePerMin: "Your hero damage is",
+};
+
+const FARM_METRICS = new Set<PctMetric>(["gpm", "xpm", "lhPerMin"]);
+
 const ROLLING = 5;
 const MIN_SIDE = 5;
 const LONG_GAME = 40 * 60;
@@ -205,7 +216,13 @@ export function findPatterns(
   }
 
   // Metrik terlemah dan terkuat dibanding pemain lain di hero yang sama.
-  const ranked = (Object.entries(avgPct) as [PctMetric, number][]).sort((a, b) => a[1] - b[1]);
+  // Pemain yang kebanyakan support tidak dinilai dari farming.
+  const mostlySupport =
+    matches.length > 0 &&
+    matches.filter((m) => m.role === "support").length / matches.length >= 0.6;
+  const ranked = (Object.entries(avgPct) as [PctMetric, number][])
+    .filter(([metric]) => !(mostlySupport && FARM_METRICS.has(metric)))
+    .sort((a, b) => a[1] - b[1]);
   const weakest = ranked[0];
   const strongest = ranked.at(-1);
   if (weakest && weakest[1] < 0.35) {
@@ -215,7 +232,7 @@ export function findPatterns(
       text:
         weakest[0] === "deathsPerMin"
           ? `You die more than ${pctText(1 - weakest[1])} of players on the same heroes.`
-          : `Your ${METRIC_LABEL[weakest[0]].toLowerCase()} is usually lower than ${pctText(1 - weakest[1])} of players on the same heroes.`,
+          : `${METRIC_SUBJECT[weakest[0]]} usually lower than ${pctText(1 - weakest[1])} of players on the same heroes.`,
     });
   }
   if (strongest && strongest !== weakest && strongest[1] > 0.65) {
@@ -225,7 +242,7 @@ export function findPatterns(
       text:
         strongest[0] === "deathsPerMin"
           ? `You die less than ${pctText(strongest[1])} of players on the same heroes.`
-          : `Your ${METRIC_LABEL[strongest[0]].toLowerCase()} is better than ${pctText(strongest[1])} of players on the same heroes.`,
+          : `${METRIC_SUBJECT[strongest[0]]} better than ${pctText(strongest[1])} of players on the same heroes.`,
     });
   }
 

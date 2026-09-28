@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/lib/opendota/types";
+import { parsePlayerInput } from "@/lib/players/id";
 import {
   isCountable,
   percentileOf,
@@ -158,5 +159,23 @@ describe("replayStatsFrom", () => {
   it("returns null for another player or an unparsed match", () => {
     expect(replayStatsFrom(match, 7, "x")).toBeNull();
     expect(replayStatsFrom({ ...match, od_data: null }, 42, "x")).toBeNull();
+  });
+});
+
+describe("parsePlayerInput", () => {
+  it("reads IDs and profile links", () => {
+    expect(parsePlayerInput("291447476")).toBe(291447476);
+    expect(parsePlayerInput("76561198251713204")).toBe(291447476);
+    expect(parsePlayerInput("https://www.opendota.com/players/291447476/matches")).toBe(291447476);
+    expect(parsePlayerInput("dotabuff.com/players/291447476")).toBe(291447476);
+    expect(parsePlayerInput("https://stratz.com/players/291447476")).toBe(291447476);
+    expect(parsePlayerInput("https://steamcommunity.com/profiles/76561198251713204/")).toBe(
+      291447476,
+    );
+  });
+
+  it("rejects things it can't read", () => {
+    expect(parsePlayerInput("https://steamcommunity.com/id/somename")).toBeNull();
+    expect(parsePlayerInput("hello")).toBeNull();
   });
 });

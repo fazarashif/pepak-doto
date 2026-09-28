@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ArrowSquareOut } from "@phosphor-icons/react/ssr";
+import Link from "next/link";
+import { ArrowRight, ArrowSquareOut } from "@phosphor-icons/react/ssr";
 import { MaskedSvg } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
@@ -44,6 +45,14 @@ export default async function ProfilePage() {
           ) : null}
         </div>
       </section>
+
+      <Link
+        href={`/players/${user.accountId}`}
+        className="flex w-fit items-center gap-1.5 font-medium text-accent-fg underline-offset-4 hover:underline"
+      >
+        See your trends, hero pool, goals and wards
+        <ArrowRight size={16} aria-hidden />
+      </Link>
 
       {user.rankTier == null ? (
         <p className="rounded-lg border border-border bg-surface px-4 py-3 text-sm leading-relaxed">

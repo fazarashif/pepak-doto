@@ -7,7 +7,7 @@
 - **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
 - **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer sudah di-merge (PR #3 dan #4). Smoke test E2E ditunda atas keputusan pemilik.
 - **Tahap 2 (In-game):** di-merge (PR #6). Sinkron data hero harian berjalan lewat GitHub Actions.
-- **Tahap 3 (Profil pemain):** rencana sudah dibahas (PRD 0.5, DEVELOPMENT_PLAN §7), menunggu review sebelum coding. Branch `feat/stage-3`.
+- **Tahap 3 (Profil pemain):** selesai di branch `feat/stage-3`, menunggu review PR.
 
 ## Tahap 1: yang sudah dikerjakan
 
@@ -99,6 +99,27 @@ Kesimpulan:
 - Beranda: label "In development" diganti link ke tiap fitur. Menu navigasi mendapat "Game plan".
 - Link OpenDota/STRATZ di laporan match hanya untuk admin (PR #5).
 - Test: 71 unit test.
+
+## Tahap 3: yang sudah dikerjakan
+
+### Data pemain
+- Satu request `/players/{id}/matches` (70 match, tanpa Turbo, remake, dan abandon) + `/benchmarks` per hero (cache 24 jam) cukup untuk persentil GPM, XPM, LH, kematian, dan damage tiap match. Detail match tidak perlu diambil.
+- Untuk user yang login, ringkasan disimpan di `match_summaries`. Akun lain hanya di-cache 5 menit.
+- **Parse otomatis:** cron harian (`/api/cron/daily`) untuk user yang login dalam 14 hari terakhir. Match 7 hari terakhir yang belum di-parse diminta parse (maks 10 per user), lalu statistik replay (LH@10, denies@10, observer/sentry, umur observer, observer yang di-deward) dibaca dari match yang sudah selesai.
+- Membuka tab Goals atau Wards di profil sendiri juga membaca sampai 3 replay yang sudah selesai, di latar belakang.
+- Menghapus akun ikut menghapus `match_summaries`. Target latihan terhapus lewat foreign key.
+
+### Halaman
+- `/players`: cari akun dari Friend ID, SteamID64, atau link OpenDota/Dotabuff/STRATZ/Steam (`/profiles/...`). Link Steam dengan nama kustom tidak bisa dibaca tanpa Steam Web API.
+- `/players/[id]` dengan tab:
+  - **Trends:** win rate, KDA, grafik persentil per metrik (rata-rata 5 game), win rate per hero/role/durasi/party, dan pola berulang. Pemain yang kebanyakan support tidak dinilai dari farming.
+  - **Heroes:** 4 kuadran (core, potential, trap, avoid) dibanding meta di bracket pemain, dan saran hero per posisi.
+  - **Goals:** target bebas dari 16 metrik (4 butuh replay). Target selesai kalau N game setelah target dibuat mencapai angkanya. Maksimal 10 target aktif. Hanya pemilik akun yang login.
+  - **Wards:** peta observer/sentry dari `wardmap` di atas peta buatan sendiri (lane, sungai, base), plus statistik observer dari replay terbaru.
+- Navigasi mendapat menu "Players". `/profile` menautkan ke profil pemain sendiri.
+- Diuji dengan akun pemilik: 50 match, 21 hero, pola "mati 10,5× di game kalah vs 6,1× di game menang", 2 match dengan replay (9 observer/game, umur rata-rata 4:15).
+- Belum diuji langsung: membuat target lewat UI (butuh login Steam). Logikanya sudah dicakup unit test.
+- Test: 97 unit test.
 
 ## Temuan Tahap 2
 - **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).

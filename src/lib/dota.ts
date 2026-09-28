@@ -99,6 +99,14 @@ export function formatClock(seconds: number) {
   return `${sign}${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, ... */
+export function ordinal(n: number) {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  const suffix = ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
 export function pct(x: number, digits = 1) {
   return `${(x * 100).toFixed(digits)}%`;
 }

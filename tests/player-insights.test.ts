@@ -81,6 +81,23 @@ describe("buildTrends", () => {
     expect(texts).toContain("You've lost 5 of your last 6 games on Axe.");
   });
 
+  it("doesn't judge a mostly-support player on farm", () => {
+    const list = Array.from({ length: 10 }, () =>
+      match({ role: "support", pct: { lhPerMin: 0.1, gpm: 0.1, deathsPerMin: 0.2 } }),
+    );
+    const texts = buildTrends(list, names).patterns.map((p) => p.text);
+    expect(texts.some((t) => /last hits|GPM/.test(t))).toBe(false);
+    expect(texts).toContain("You die more than 80% of players on the same heroes.");
+  });
+
+  it("writes metric sentences with the right grammar", () => {
+    const list = Array.from({ length: 10 }, () => match({ pct: { lhPerMin: 0.2 } }));
+    const texts = buildTrends(list, names).patterns.map((p) => p.text);
+    expect(texts).toContain(
+      "Your last hits per minute are usually lower than 80% of players on the same heroes.",
+    );
+  });
+
   it("stays quiet with too few games", () => {
     const list = [match({ win: false, deaths: 12 }), match({ win: true, deaths: 1 })];
     expect(buildTrends(list, names).patterns).toEqual([]);
@@ -142,6 +159,9 @@ describe("goals", () => {
       "Last hits per minute at least 6/min in 2 games",
     );
     expect(goalText(goal({ metric: "win", games: 3 }))).toBe("Win 3 games");
+    expect(goalText(goal({ metric: "pctGpm", direction: "atLeast", target: 62 }))).toBe(
+      "GPM percentile at least 62nd in 2 games",
+    );
   });
 
   it("counts only games after the goal was set", () => {

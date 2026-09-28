@@ -1,5 +1,6 @@
 // Target latihan: katalog metrik dan penghitungan progres. Fungsi murni.
 
+import { ordinal } from "@/lib/dota";
 import type { MatchSummary } from "./summary";
 
 export type Direction = "atLeast" | "atMost";
@@ -207,7 +208,7 @@ export function goalText(g: Pick<GoalInput, "metric" | "direction" | "target" | 
   const def: MetricDef = GOAL_METRICS[g.metric];
   if (g.metric === "win") return `Win ${g.games} ${g.games === 1 ? "game" : "games"}`;
   const op = g.direction === "atLeast" ? "at least" : "at most";
-  const target = `${g.target}${def.unit}`;
+  const target = def.unit === "th" ? ordinal(g.target) : `${g.target}${def.unit}`;
   return `${def.label} ${op} ${target} in ${g.games} ${g.games === 1 ? "game" : "games"}`;
 }
 
