@@ -127,5 +127,48 @@ export const goals = pgTable(
   (t) => [index("goals_user_idx").on(t.userId)],
 );
 
+/** Pemakaian LLM per hari, provider, model, dan fitur (untuk panel admin dan perkiraan biaya). */
+export const llmUsage = pgTable(
+  "llm_usage",
+  {
+    day: date("day").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    feature: text("feature").notNull(),
+    requests: integer("requests").notNull().default(0),
+    failures: integer("failures").notNull().default(0),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    costUsd: doublePrecision("cost_usd").notNull().default(0),
+    lastError: text("last_error"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.provider, t.model, t.feature] })],
+);
+
+/**
+ * Narasi coaching yang sudah dibuat LLM. Kunci per jenis:
+ * match = "matchId:slot", trends = "accountId:matchId terbaru:jumlah", hero = "heroId:bracket:patch".
+ * Teks template (saat semua LLM gagal) tidak disimpan, supaya bisa dicoba lagi nanti.
+ */
+export const narratives = pgTable(
+  "narratives",
+  {
+    kind: text("kind").notNull(),
+    key: text("key").notNull(),
+    version: smallint("version").notNull(),
+    content: jsonb("content").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.kind, t.key, t.version] }),
+    index("narratives_created_idx").on(t.createdAt),
+    index("narratives_creator_idx").on(t.createdBy, t.createdAt),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type Goal = typeof goals.$inferSelect;

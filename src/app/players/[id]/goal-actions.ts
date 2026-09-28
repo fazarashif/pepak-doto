@@ -27,13 +27,32 @@ export async function createGoal(_prev: GoalFormState, formData: FormData): Prom
   const user = await getCurrentUser();
   if (!user) return { status: "error", message: "Your session has ended. Sign in again." };
 
-  const parsed = goalSchema.safeParse({
+  return saveGoal(user, {
     metric: formData.get("metric"),
     direction: formData.get("direction"),
     target: formData.get("target"),
     games: formData.get("games"),
     heroId: formData.get("heroId"),
   });
+}
+
+/** Tambah target yang disarankan coach di tab Trends. */
+export async function addSuggestedGoal(goal: {
+  metric: string;
+  direction: string;
+  target: number;
+  games: number;
+}): Promise<GoalFormState> {
+  const user = await getCurrentUser();
+  if (!user) return { status: "error", message: "Your session has ended. Sign in again." };
+  return saveGoal(user, { ...goal, heroId: null });
+}
+
+async function saveGoal(
+  user: { id: string; accountId: number },
+  input: Record<string, unknown>,
+): Promise<GoalFormState> {
+  const parsed = goalSchema.safeParse(input);
   if (!parsed.success) {
     return { status: "error", message: parsed.error.issues[0]?.message ?? "Check the goal." };
   }

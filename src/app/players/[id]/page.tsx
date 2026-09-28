@@ -118,7 +118,13 @@ export default async function PlayerPage({ params, searchParams }: PageProps<"/p
       </nav>
 
       {tab === "trends" ? (
-        <TrendsView player={player} heroes={heroById} size={size} />
+        <TrendsView
+          player={player}
+          heroes={heroById}
+          size={size}
+          signedIn={Boolean(user)}
+          isOwner={isOwner}
+        />
       ) : tab === "heroes" ? (
         <HeroesView accountId={accountId} rankTier={player.rankTier} heroes={heroById} />
       ) : tab === "goals" ? (

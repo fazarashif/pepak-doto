@@ -9,6 +9,8 @@ import type { HeroInfo } from "@/lib/dota";
 import { getHeroes } from "@/lib/heroes";
 import { buildReport, lookupMatch, type MatchLookup } from "@/lib/match/data";
 import type { Match } from "@/lib/opendota/types";
+import { matchNotesKey, storedAsResult, storedMatchNotes } from "@/lib/llm/narratives";
+import { MatchCoach } from "./match-coach";
 import { ParsePanel } from "./parse-panel";
 import { ReportView } from "./report-view";
 
@@ -65,10 +67,25 @@ export default async function MatchReportPage({ params, searchParams }: PageProp
   }
 
   const report = await buildReport(match, slot);
+  const notes = storedAsResult(
+    await storedMatchNotes(matchNotesKey(match.match_id, slot, report.parsed)),
+  );
 
   return (
     <div className="mx-auto grid max-w-5xl gap-8 px-4 pt-10 sm:px-6">
-      <ReportView report={report} heroes={heroes} showSourceLinks={isAdmin(user)} />
+      <ReportView
+        report={report}
+        heroes={heroes}
+        showSourceLinks={isAdmin(user)}
+        coach={
+          <MatchCoach
+            matchId={match.match_id}
+            slot={slot}
+            initial={notes}
+            signedIn={Boolean(user)}
+          />
+        }
+      />
       {!report.parsed ? <ParsePanel matchId={match.match_id} startTime={match.start_time} /> : null}
     </div>
   );

@@ -6,21 +6,30 @@ import { ordinal, pct, type HeroInfo } from "@/lib/dota";
 import type { PlayerLookup } from "@/lib/players/data";
 import { PCT_METRICS, type PctMetric } from "@/lib/players/summary";
 import { buildTrends, METRIC_LABEL, type Bucket, type Trends } from "@/lib/players/trends";
+import { storedAsResult, storedTrendSummary, trendKey } from "@/lib/llm/narratives";
+import { TrendCoach } from "./trend-coach";
 
 type OkPlayer = Extract<PlayerLookup, { status: "ok" }>;
 
-export function TrendsView({
+export async function TrendsView({
   player,
   heroes,
   size,
+  signedIn,
+  isOwner,
 }: {
   player: OkPlayer;
   heroes: Map<number, HeroInfo>;
   size: number;
+  signedIn: boolean;
+  isOwner: boolean;
 }) {
   const names = new Map([...heroes.values()].map((h) => [h.id, h.name]));
   const t = buildTrends(player.summaries, names);
   const winRate = t.games ? t.wins / t.games : 0;
+  const summary = storedAsResult(
+    await storedTrendSummary(trendKey(player.accountId, player.summaries, size)),
+  );
 
   return (
     <div className="grid gap-10">
@@ -64,6 +73,15 @@ export function TrendsView({
           }
         />
       </dl>
+
+      <TrendCoach
+        key={size}
+        accountId={player.accountId}
+        size={size}
+        initial={summary}
+        signedIn={signedIn}
+        isOwner={isOwner}
+      />
 
       {t.patterns.length ? (
         <section aria-labelledby="patterns" className="grid gap-3">

@@ -170,6 +170,44 @@ Setelah itu workflow jalan otomatis setiap hari pukul 02:15 UTC (09:15 WIB).
 - Di laptop tidak perlu sinkron. Data diambil langsung dari STRATZ saat dibutuhkan, lalu disimpan di database lokal. Kalau mau mengisi semuanya sekaligus, stop `npm run dev` lalu jalankan `npm run sync:hero-data -- --local`.
 - Kalau token STRATZ sedang dipakai dari 2 IP lain (mis. laptop dan sandbox), sinkron menunggu sampai IP bebas (maksimal ±15 menit), lalu lanjut.
 
+## H. Coaching notes (LLM)
+
+Tanpa API key apa pun, tombol coaching tetap jalan dan memberi versi template (lebih kaku, isinya sama). Urutan model default: **Claude Haiku 4.5**, lalu **Gemini**, lalu **OpenRouter**. Urutan ini bisa diubah di **/admin → Coaching notes (LLM)**.
+
+**1. Claude (utama, berbayar per pemakaian)**
+1. Buka https://console.anthropic.com dan buat akun. Akun ini terpisah dari langganan claude.ai.
+2. **Billing → Add credits.** Isi kredit awal kecil, misalnya $5.
+3. **Limits → Spend limit.** Pasang batas belanja bulanan, misalnya $5–10. Kalau batas tercapai, Claude berhenti menjawab dan aplikasi otomatis pindah ke cadangan gratis.
+4. **API keys → Create key.** Beri nama `pepak-doto` lalu salin key-nya. Key hanya tampil sekali.
+
+**2. Gemini (cadangan gratis)**
+1. Buka https://aistudio.google.com, login dengan akun Google.
+2. **Get API key → Create API key**, lalu salin.
+3. Free tier cukup; tidak perlu mengaktifkan billing. Catatan: data di free tier boleh dipakai Google untuk melatih model. Prompt kita hanya berisi statistik, tanpa nama atau ID pemain.
+
+**3. OpenRouter (cadangan gratis kedua)**
+1. Buka https://openrouter.ai dan buat akun.
+2. **Keys → Create key**, lalu salin. Model `:free` tidak butuh kredit, tapi dibatasi sekitar 50 request per hari.
+
+**4. Isi di Vercel**
+Vercel → project `pepak-doto` → **Settings → Environment Variables**:
+
+| Nama | Environment |
+|---|---|
+| `ANTHROPIC_API_KEY` | Production (dan Preview kalau mau mencoba di preview) |
+| `GEMINI_API_KEY` | Production, Preview |
+| `OPENROUTER_API_KEY` | Production, Preview |
+
+Lalu **Deployments → ⋯ → Redeploy**. Di laptop, isi key yang sama di `.env.local` kalau ingin mencoba lokal.
+
+**5. Cek**
+1. Buka **/admin → Coaching notes (LLM)**. Ketiga provider harus bertuliskan *set*.
+2. Tekan **Test** di tiap baris. Hasil yang benar berisi waktu respon dan jawaban JSON kecil.
+3. Buka salah satu match, tekan **Get coaching notes**. Di bawah catatan tertulis "Written by Claude Haiku 4.5".
+4. Tabel pemakaian di /admin menampilkan token dan perkiraan biaya per hari.
+
+**Kalau model cadangan diganti penyedianya:** nama model Gemini dan OpenRouter kadang berganti. Kalau Test gagal dengan pesan model tidak ditemukan, ketik nama model yang baru di kolom Model lalu Save.
+
 ## Masalah umum
 
 | Gejala | Penyebab | Solusi |

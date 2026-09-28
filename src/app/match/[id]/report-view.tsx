@@ -17,11 +17,14 @@ export function ReportView({
   report,
   heroes,
   showSourceLinks = false,
+  coach,
 }: {
   report: MatchReport;
   heroes: Map<number, HeroInfo>;
   /** Link ke OpenDota/STRATZ hanya untuk admin, supaya user biasa tidak dialihkan ke situs lain. */
   showSourceLinks?: boolean;
+  /** Panel Coach's notes (LLM), ditaruh sebelum catatan perbaikan. */
+  coach?: React.ReactNode;
 }) {
   const hero = heroes.get(report.player.heroId);
   const p = report.player;
@@ -94,6 +97,8 @@ export function ReportView({
           ))}
         </ul>
       ) : null}
+
+      {coach}
 
       <FramedPanel as="section" tab="Notes" className="p-6 md:p-8">
         <div className="grid gap-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">

@@ -7,7 +7,8 @@
 - **Tahap 0 (Fondasi):** selesai dan live di Vercel + Neon. Login Steam, halaman admin, dan desain Pepak Doto sudah berjalan.
 - **Tahap 1 (MVP):** Draft Assistant dan Post-Match Analyzer sudah di-merge (PR #3 dan #4). Smoke test E2E ditunda atas keputusan pemilik.
 - **Tahap 2 (In-game):** di-merge (PR #6). Sinkron data hero harian berjalan lewat GitHub Actions.
-- **Tahap 3 (Profil pemain):** selesai di branch `feat/stage-3`, menunggu review PR.
+- **Tahap 3 (Profil pemain):** di-merge (PR #7). Perbaikan game time di Game Plan juga sudah di-merge (PR #8).
+- **Tahap 4 (Coaching LLM):** selesai di branch `feat/stage-4`, menunggu review PR. Pemilik perlu membuat API key (SETUP.md bagian H).
 
 ## Tahap 1: yang sudah dikerjakan
 
@@ -121,6 +122,17 @@ Kesimpulan:
 - Diuji dengan akun pemilik: 50 match, 21 hero, pola "mati 10,5× di game kalah vs 6,1× di game menang", 2 match dengan replay (9 observer/game, umur rata-rata 4:15).
 - Belum diuji langsung: membuat target lewat UI (butuh login Steam). Logikanya sudah dicakup unit test.
 - Test: 97 unit test.
+
+## Tahap 4: yang sudah dikerjakan
+
+- **Provider** (`src/lib/llm/providers.ts`): Anthropic (SDK resmi), Gemini dan OpenRouter (REST). Aktif hanya kalau env var key-nya ada. Harga untuk perkiraan biaya: Haiku 4.5 $1/$5, Sonnet 5 $2/$10 per juta token (dicek 2026-09-28); model gratis $0.
+- **Router** (`src/lib/llm/router.ts`): urutan model dari `app_settings.llm` (default Haiku → Gemini Flash-Lite → Gemma 4 free), batas 10/user dan 200/hari (hanya narasi baru yang dihitung), timeout 25 detik per model, catatan token dan biaya per hari di `llm_usage`, narasi diterima disimpan di `narratives`. Template tidak disimpan supaya bisa dicoba lagi.
+- **Pemeriksaan jawaban** (`src/lib/llm/check.ts`): harus JSON dengan bentuk yang ditentukan; nama hero/item di jawaban harus ada di fakta yang dikirim (ward, smoke, tango, dll. selalu boleh). Kalau gagal, model berikutnya dicoba.
+- **Prompt** (`src/lib/llm/prompts/`, versi 1): `match-notes` (ringkasan, maks 3 fokus dengan alasan dan latihan, hal yang sudah bagus), `trend-summary` (ringkasan + saran target yang metriknya harus dari daftar yang dikirim), `hero-tips` (3–5 tips). Fakta tidak berisi nama pemain, Steam ID, atau match ID.
+- **Tampilan:** panel "Coach's notes" di match review, "Coach's summary" di tab Trends (dengan tombol "Add this goal" untuk pemilik akun), "Tips against …" di cheat sheet. Tombol untuk membuat, butuh login; yang sudah tersimpan tampil untuk semua orang. Selalu tertulis model yang menulis, atau catatan kalau yang tampil versi template.
+- **Admin:** status tiap provider, urutan model (bisa ketik nama model baru), tombol Test, batas harian, on/off, dan tabel pemakaian 7 hari dengan perkiraan biaya.
+- **Belum diuji dengan API sungguhan:** belum ada key. Alur cadangan dan pemeriksaan diuji dengan provider tiruan. Setelah key diisi, cek lewat tombol Test di /admin.
+- Test: 125 unit test.
 
 ## Temuan Tahap 2
 - **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).

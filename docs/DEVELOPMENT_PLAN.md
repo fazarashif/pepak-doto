@@ -3,8 +3,11 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.5 (2026-09-28) |
+| Versi | 0.6 (2026-09-28) |
 | Terkait | [PRD.md](PRD.md), [PROGRESS.md](PROGRESS.md) |
+
+**Perubahan di 0.6:**
+- Rincian Tahap 4 (§7).
 
 **Perubahan di 0.5:**
 - Rincian Tahap 3 (§7).
@@ -279,13 +282,22 @@ Keputusan: D26–D29 di PRD §11.
 **Selesai bila:** profil akun publik mana pun menampilkan tren, hero pool, dan heatmap; user yang login bisa membuat target bebas yang terisi otomatis dari match baru; match baru user yang login ikut di-parse tanpa klik manual.
 
 ### Tahap 4: Coaching LLM
-| # | Tugas |
-|---|---|
-| 4.1 | Interface `LlmProvider` + implementasi Anthropic (Claude), Gemini, dan OpenAI-compatible |
-| 4.2 | LLM router: cadangan, batas pemakaian, pencatatan ke `llm_usage` |
-| 4.3 | Admin UI: pilih model, urutan cadangan, Test, batas, grafik pemakaian |
-| 4.4 | Prompt berbasis fakta (diberi versi) + narasi post-match, tren, cheat sheet |
-| 4.5 | Cache narasi di DB + evaluasi sederhana (tidak menyebut hero atau item di luar data) |
+Keputusan: D30–D33 di PRD §11.
+
+| # | Tugas | Status |
+|---|---|---|
+| 4.1 | **Provider.** Interface `LlmProvider` (`generate(system, prompt, options)` → teks + token). Implementasi: `anthropic` (SDK resmi, default `claude-haiku-4-5-20251001`, pilihan `claude-sonnet-5`), `gemini` (REST, default `gemini-3.5-flash-lite`), `openrouter` (REST format OpenAI, default `google/gemma-4-31b-it:free`). Nama model bisa diketik bebas di admin. Provider hanya aktif kalau API key-nya ada di env | ✅ |
+| 4.2 | **Router.** Urutan dari `app_settings.llm`: model utama, lalu cadangan, lalu template. Batas per user dan total per hari. Tabel `llm_usage` (hari, provider, model, fitur, request, token input/output, perkiraan biaya, error) | ✅ |
+| 4.3 | **Admin.** Bagian LLM di `/admin`: status tiap provider (key ada atau tidak), pilih model utama dan urutan cadangan, batas harian, matikan fitur, tombol Test (contoh prompt kecil), dan pemakaian 7 hari (request, token, perkiraan biaya) | ✅ |
+| 4.4 | **Prompt dan narasi.** `llm/prompts/` dengan nomor versi: `match-notes`, `trend-summary`, `hero-tips`. Masing-masing menerima fakta JSON yang sudah dihitung (nilai, prioritas, pola, counter, item) dan punya template cadangan. Tombol dan tampilan di match review, tab Trends, dan cheat sheet | ✅ |
+| 4.5 | **Cache dan pemeriksaan.** Tabel `narratives` (jenis, kunci, versi prompt, teks, provider, model, dibuat). Kuncinya: match+pemain, akun+match terbaru, dan hero+rank+patch. Pemeriksaan otomatis: hero dan item yang disebut harus ada di fakta; panjang wajar; tidak kosong. Unit test untuk pemeriksaan dan router (provider tiruan) | ✅ |
+| 4.6 | **Panduan setup** di SETUP.md: Anthropic Console (kredit, batas belanja, API key), Gemini API key, OpenRouter API key, dan env var di Vercel | ✅ |
+
+**Env var baru:** `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY` (semuanya opsional; tanpa key, provider itu dilewati).
+
+**Perkiraan biaya (Claude Haiku 4.5, dicek ulang saat implementasi):** ±$0,004 per narasi. Maksimal 200 narasi/hari ≈ $24/bulan kalau batas harian selalu penuh. Tips cheat sheet: ±127 hero × 5 kelompok rank ≈ $2,50 per patch kalau semuanya dibuat.
+
+**Selesai bila:** dengan `ANTHROPIC_API_KEY` terpasang, user yang login bisa meminta narasi di tiga tempat itu; narasi tersimpan dibaca ulang tanpa memanggil LLM; admin bisa mengganti model dan melihat pemakaian tanpa deploy ulang; tanpa key apa pun, tombol tetap memberi teks template.
 
 ### Tahap 5: Opsional
 - GSI (diskusi dulu).
