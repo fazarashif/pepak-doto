@@ -39,10 +39,12 @@ import { getStoredNarrative, type NarrativeResult, type NarrativeSpec } from "./
 async function vocabulary(): Promise<Vocabulary> {
   return cached("llm:vocabulary", 12 * HOUR, async () => {
     const [heroes, items] = await Promise.all([getHeroes(), getItemInfo()]);
-    // Item resep dan item yang namanya terlalu umum tidak ikut diperiksa.
+    // Hanya item yang bisa dibeli. Enhancement dan item neutral (cost 0) banyak yang namanya
+    // kata biasa ("Greedy", "Alert", "Timeless"), jadi sering salah terdeteksi di awal kalimat.
     const itemNames = [...items.values()]
+      .filter((i) => i.cost > 0 && !i.key.startsWith("enhancement_") && !/recipe/i.test(i.name))
       .map((i) => i.name)
-      .filter((n) => !/recipe/i.test(n) && n.length >= 4);
+      .filter((n) => n.length >= 4);
     return { names: [...heroes.map((h) => h.name), ...itemNames] };
   });
 }
@@ -73,7 +75,7 @@ export async function matchNotesSpec(report: MatchReport): Promise<NarrativeSpec
     version: MATCH_NOTES_VERSION,
     system: MATCH_NOTES_SYSTEM,
     prompt: prompt(facts),
-    maxTokens: 700,
+    maxTokens: 1200,
     parse: (json) => parseMatchNotes(json, allowed, vocab),
     template: () => matchNotesTemplate(report),
   };
@@ -103,7 +105,7 @@ export async function trendSpec(
     version: TREND_SUMMARY_VERSION,
     system: TREND_SUMMARY_SYSTEM,
     prompt: prompt(facts),
-    maxTokens: 500,
+    maxTokens: 900,
     parse: (json) => parseTrendSummary(json, allowed, metrics, vocab),
     template: () => trendTemplate(trends, matches),
   };
@@ -139,7 +141,7 @@ export async function heroTipsSpec(
     version: HERO_TIPS_VERSION,
     system: HERO_TIPS_SYSTEM,
     prompt: prompt(facts),
-    maxTokens: 500,
+    maxTokens: 900,
     parse: (json) => parseHeroTips(json, allowed, vocab),
     template: () => heroTipsTemplate(sheet, { heroName, heroNames }),
   };

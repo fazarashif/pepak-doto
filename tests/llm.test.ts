@@ -92,7 +92,39 @@ describe("runChain", () => {
     });
     expect(res?.entry.provider).toBe("d");
     expect(providers.b.calls).toBe(0);
-    expect(attempts).toEqual(["a:500", "c:not good", "d:ok"]);
+    expect(attempts).toEqual(["a:500", "c:not good", "c:not good", "d:ok"]);
+  });
+
+  it("asks the same model again with the reason before moving on", async () => {
+    const prompts: string[] = [];
+    const flaky: ChainProvider = {
+      isConfigured: () => true,
+      async generate(_model, req) {
+        prompts.push(req.prompt);
+        return { text: prompts.length === 1 ? "bad" : "good", inputTokens: 1, outputTokens: 1 };
+      },
+    };
+    const res = await runChain({
+      chain: [{ provider: "a", model: "m" }],
+      providers: { a: flaky },
+      request,
+      accept,
+      timeoutMs: 1000,
+    });
+    expect(res?.value).toBe("good");
+    expect(prompts[1]).toContain("Your previous answer was rejected: not good.");
+  });
+
+  it("does not retry the same model after a network error", async () => {
+    const down = fake(new Error("503"));
+    await runChain({
+      chain: [{ provider: "a", model: "m" }],
+      providers: { a: down },
+      request,
+      accept,
+      timeoutMs: 1000,
+    });
+    expect(down.calls).toBe(1);
   });
 
   it("returns null when nothing works", async () => {
