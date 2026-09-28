@@ -15,6 +15,8 @@
   - Data item, durasi, dan tipe damage diambil dari STRATZ per posisi per bracket.
   - Data STRATZ disinkron harian lewat GitHub Actions ke Neon karena token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.
   - Timer manual ditunda; tips cheat sheet menunggu LLM di Tahap 4.
+  - **LLM utama diganti ke Claude (Anthropic API, berbayar per pemakaian)** dengan model default Claude Haiku 4.5. Admin tetap bisa mengganti model atau pindah ke LLM gratis. Menggantikan keputusan 0.3 "hanya LLM gratis".
+  - Link OpenDota/STRATZ di laporan match hanya tampil untuk admin.
 - **0.3:**
   - Hanya LLM gratis (tanpa billing), tetap bisa diatur admin.
   - Batas narasi 10 per user dan 200 total per hari.
@@ -47,7 +49,7 @@ Datanya sebenarnya tersedia gratis (OpenDota, STRATZ), hanya belum diolah menjad
 - **Berbasis data.** Setiap rekomendasi punya alasan yang bisa dicek.
 - **Fokus ke perbaikan.** Output utama adalah "apa yang harus dilakukan berikutnya".
 - **Legal dan aman.** Tidak membaca memori game dan tidak melanggar aturan Valve.
-- **Mulai gratis, siap dikembangkan.** Semua layanan memakai free tier, tapi dengan arsitektur yang bisa di-upgrade tanpa menulis ulang.
+- **Biaya kecil, siap dikembangkan.** Hosting, database, dan data memakai free tier. Satu-satunya biaya adalah LLM utama (Claude), yang dibatasi pemakaiannya. Arsitekturnya bisa di-upgrade tanpa menulis ulang.
 
 ## 3. Target pengguna
 
@@ -70,7 +72,7 @@ Platform: **web responsif**. Dibuka di PC, atau di HP sebagai layar kedua saat b
 | Laporan post-match mudah dipahami | Laporan tampil < 5 detik untuk match yang sudah di-parse; maksimal 3 prioritas perbaikan |
 | Rekomendasi draft relevan | Backtest ke match publik: skor lebih tinggi berkorelasi dengan winrate lebih tinggi |
 | User benar-benar berkembang | (Tahap 3) Target latihan tercapai; tren metrik utama membaik dalam 20 match |
-| Biaya nol di awal | Semua layanan tetap dalam free tier, termasuk LLM. Tidak ada billing yang diaktifkan |
+| Biaya terkendali | Hosting, database, dan data tetap di free tier. Biaya Claude API tidak melewati batas belanja yang dipasang di Anthropic Console |
 
 ## 5. Ruang lingkup fitur
 
@@ -206,13 +208,13 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 - Ditunda karena kekhawatiran aplikasi jadi berat. Didiskusikan setelah Tahap 3.
 
 ### F11: Panel admin
-**User story:** *Sebagai admin, saya ingin memilih LLM gratis yang dipakai aplikasi dan memantau pemakaiannya, tanpa perlu deploy ulang.*
+**User story:** *Sebagai admin, saya ingin memilih LLM yang dipakai aplikasi (Claude atau yang gratis) dan memantau pemakaiannya, tanpa perlu deploy ulang.*
 
 - **Akses:** awalnya hanya pemilik aplikasi. Steam ID admin disimpan di environment variable, bukan di UI.
 - **Pengaturan LLM:**
-  - Hanya layanan dengan **free tier**, tanpa billing.
-  - Provider yang tersedia: **Google Gemini** (free tier Flash / Flash-Lite), **Groq**, **OpenRouter** (model `:free`), dan **provider lain yang kompatibel dengan format OpenAI**, misalnya Cerebras atau Mistral.
-  - Kalau suatu saat mau memakai model berbayar, cukup menambah API key tanpa mengubah kode.
+  - **Default: Claude Haiku 4.5** (Anthropic API, berbayar per pemakaian). Admin bisa memilih model Claude lain, mis. Claude Sonnet 5 kalau butuh kualitas lebih.
+  - **Pilihan gratis** tetap tersedia dan bisa dijadikan utama atau cadangan: **Google Gemini** (free tier Flash / Flash-Lite), **Groq**, **OpenRouter** (model `:free`), dan **provider lain yang kompatibel dengan format OpenAI**, misalnya Cerebras atau Mistral.
+  - Kalau Claude error atau batas belanja tercapai, router otomatis pindah ke cadangan gratis.
   - API key disimpan di **environment variable Vercel**; UI hanya menampilkan status "configured".
   - Provider hanya tampil aktif kalau API key-nya sudah diisi di server.
   - Admin memilih **model utama** dan **urutan cadangan**.
@@ -293,8 +295,9 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | Kuota atau token STRATZ bermasalah | Draft kurang akurat | Cadangan otomatis ke OpenDota. Token diperpanjang tahunan (lihat checklist) |
 | Token STRATZ hanya boleh dipakai dari **2 IP per 15 menit**, sedangkan IP server Vercel berganti-ganti | Request dari Vercel ditolak, draft jatuh ke data cadangan | Sinkron harian lewat GitHub Actions (satu IP) ke Neon. Website hanya membaca Neon |
 | Kuota OpenDota habis saat user bertambah | Fitur berhenti | Cache di DB, refresh meta terjadwal. API key berbayar kalau perlu |
-| Kuota LLM gratis habis atau kebijakannya berubah | Narasi tidak tampil | Beberapa provider cadangan, batas harian di F11, teks template sebagai pilihan terakhir |
-| Free tier Gemini boleh dipakai Google untuk melatih model | Isi prompt terlihat oleh Google | Prompt hanya berisi statistik match (tanpa nama atau ID pemain). Disebutkan di Privacy Policy |
+| Biaya Claude API membengkak | Tagihan tak terduga | Batas belanja bulanan di Anthropic Console, batas 10/user dan 200/hari di aplikasi, cache narasi, pindah otomatis ke LLM gratis |
+| Kuota LLM gratis habis atau kebijakannya berubah | Narasi cadangan tidak tampil | Beberapa provider cadangan, batas harian di F11, teks template sebagai pilihan terakhir |
+| Free tier Gemini (kalau dipakai sebagai cadangan) boleh dipakai Google untuk melatih model | Isi prompt terlihat oleh Google | Prompt hanya berisi statistik match (tanpa nama atau ID pemain). Disebutkan di Privacy Policy |
 | Storage DB free (0,5 GB) penuh | Tulis data gagal | Simpan ringkasan, bukan JSON match mentah. Cache mentah dibersihkan otomatis. Pantau di admin |
 | Free tier (Vercel/DB) terlampaui | Aplikasi lambat atau berhenti | Monitoring di F11. Jalur upgrade sudah dirancang |
 | Profil atau match privat | Fitur personal tidak jalan | Pesan jelas beserta cara mengaktifkan *Expose Public Match Data* |
@@ -312,7 +315,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D5 | Login | Steam |
 | D6 | Turbo | Tidak dianalisis |
 | D7 | Nama | Pepak Doto |
-| D8 | LLM | Hanya LLM gratis (tanpa billing). Satu model utama + cadangan, dipilih admin |
+| D8 | LLM | **Utama: Claude (Anthropic API, berbayar), default Claude Haiku 4.5.** Admin bisa mengganti model atau memakai LLM gratis. Satu model utama + cadangan (diperbarui 2026-09-28; sebelumnya hanya LLM gratis) |
 | D9 | Monetisasi | Mungkin nanti; mulai non-komersial |
 | D10 | Repo | GitHub `fazarashif/pepak-doto` (public), **tanpa lisensi** |
 | D11 | Logo | Didiskusikan nanti; tanyakan ke pemilik saat waktunya |
@@ -329,6 +332,7 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D22 | Timer manual | Ditunda |
 | D23 | Tips cheat sheet | Data saja di Tahap 2; tips tertulis dari LLM di Tahap 4 |
 | D24 | Sinkron STRATZ | GitHub Actions harian menulis ke Neon; secret `STRATZ_TOKEN` dan `DATABASE_URL` di GitHub |
+| D25 | Link sumber data | Link OpenDota/STRATZ di laporan match hanya untuk admin |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).

@@ -9,6 +9,7 @@
 **Perubahan di 0.4:**
 - Rincian Tahap 2 (§7), termasuk sinkron STRATZ harian lewat GitHub Actions.
 - Bobot skor draft dari hasil backtest (§8).
+- LLM utama sekarang Claude (Anthropic API, default Claude Haiku 4.5); LLM gratis jadi pilihan lain dan cadangan (§4).
 
 **Perubahan di 0.3:**
 - LLM hanya dari provider gratis.
@@ -52,7 +53,7 @@ Semua layanan memakai **free tier**. Kolom terakhir menunjukkan jalur upgrade ka
 | Job terjadwal | **Vercel Cron** (Hobby: sekali sehari) | Refresh data meta (heroStats, matchup) tiap hari | Frekuensi lebih tinggi di Pro |
 | Auth | **Steam OpenID 2.0** (implementasi kecil sendiri) + session cookie ter-signed (`jose`) | Steam memakai OpenID 2.0 yang tidak didukung bawaan Auth.js. Implementasinya pendek dan mudah diaudit | – |
 | Data | OpenDota (REST), **STRATZ (GraphQL)**. Steam Web API opsional | Lihat PRD §9 | API key berbayar OpenDota |
-| LLM | Interface `LlmProvider`: Gemini (free tier), Groq, OpenRouter, provider format OpenAI. **Hanya yang gratis** | Admin memilih model tanpa deploy ulang (F11) | Model berbayar cukup dengan menambah API key |
+| LLM | Interface `LlmProvider`: **Anthropic (Claude, utama)**, Gemini (free tier), Groq, OpenRouter, provider format OpenAI | Admin memilih model tanpa deploy ulang (F11) | Ganti ke model Claude yang lebih besar dari admin |
 | Analytics | **Vercel Web Analytics** (tanpa cookie) | Gratis, tidak perlu banner cookie | – |
 | Validasi | **Zod** | Input API dan respons eksternal | – |
 | Data fetching client | **TanStack Query** | Debounce draft, polling parse | – |
@@ -109,7 +110,7 @@ flowchart LR
   D --> OD[(OpenDota)]
   D --> ST[(STRATZ)]
   A --> SW[(Steam OpenID)]
-  S --> LR[LLM router] --> L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
+  S --> LR[LLM router] --> L0[(Claude)] & L1[(Gemini)] & L2[(Groq)] & L3[(OpenRouter / lainnya)]
   CR[Vercel Cron harian] --> D
   GA[GitHub Actions harian<br/>sync STRATZ] --> ST
   GA --> DB
@@ -125,26 +126,35 @@ flowchart LR
 
 ## 4. Desain LLM yang bisa dikonfigurasi admin
 
-**Keputusan: hanya LLM gratis, tanpa billing.** Langganan Google AI Pro tidak memberi kuota API, dan kredit Cloud-nya butuh billing aktif, jadi tidak dipakai.
+**Keputusan (diperbarui 2026-09-28): LLM utama adalah Claude lewat Anthropic API.** Admin tetap bisa mengganti model atau memindahkan LLM utama ke provider gratis tanpa deploy ulang.
 
-**Provider gratis yang direncanakan** (batas dari sumber pihak ketiga, dicek ulang saat Tahap 4):
+**Model default: Claude Haiku 4.5** (`claude-haiku-4-5-20251001`). Alasannya:
+- Tugasnya hanya menarasikan fakta yang sudah dihitung aplikasi (nilai, prioritas, item), bukan menganalisis dari nol. Model kecil sudah cukup.
+- Paling murah dan paling cepat di keluarga Claude, jadi narasi tampil cepat dan biaya kecil.
+- Kalau hasilnya terasa kurang, admin bisa naik ke **Claude Sonnet 5** (`claude-sonnet-5`) dari panel admin.
 
-| Provider | Model gratis (contoh) | Kuota (perkiraan) | Peran |
+**Biaya:** Claude API berbayar per token dan butuh akun di Anthropic Console dengan kredit. Ini terpisah dari langganan claude.ai. Satu narasi kira-kira 2.000 token input + 400 token output. Dengan batas 200 narasi per hari, biaya bulanan tetap kecil; harga pastinya dicek ulang saat Tahap 4. Pengaman:
+- batas belanja bulanan di Anthropic Console
+- batas aplikasi 10 narasi per user dan 200 total per hari
+- narasi di-cache, jadi match yang sama tidak dinarasikan dua kali
+- kalau Claude error atau batas belanja habis, router pindah ke cadangan gratis
+
+**Provider gratis sebagai pilihan lain dan cadangan** (batas dari sumber pihak ketiga, dicek ulang saat Tahap 4):
+
+| Provider | Model gratis (contoh) | Kuota (perkiraan) | Peran default |
 |---|---|---|---|
-| **Google Gemini** (AI Studio, free tier) | Flash / Flash-Lite | ±1.500 request/hari | **Utama.** Kuota paling longgar, bahasa Inggris bagus |
-| **Groq** | gpt-oss-120b, dll. | ±1.000 request/hari per model | Cadangan 1. Sangat cepat |
-| **OpenRouter** (model `:free`) | DeepSeek, Qwen, Llama | 50 request/hari (1.000 kalau pernah top-up $10) | Cadangan 2 |
+| **Google Gemini** (AI Studio, free tier) | Flash / Flash-Lite | ±1.500 request/hari | Cadangan 1 |
+| **Groq** | gpt-oss-120b, dll. | ±1.000 request/hari per model | Cadangan 2. Sangat cepat |
+| **OpenRouter** (model `:free`) | DeepSeek, Qwen, Llama | 50 request/hari (1.000 kalau pernah top-up $10) | Opsional |
 | Provider format OpenAI lain | mis. Cerebras, Mistral | Bervariasi | Opsional, ditambah kalau perlu |
 
-Batas aplikasi (**200 narasi/hari total**) jauh di bawah kuota Gemini saja, jadi cadangan hanya dipakai kalau provider utama error.
-
-**Catatan privasi:** data di free tier Gemini boleh dipakai Google untuk melatih model. Karena itu prompt hanya berisi statistik (tanpa nama, Steam ID, atau match ID), dan hal ini disebutkan di Privacy Policy.
+**Catatan privasi:** Anthropic tidak memakai data API untuk melatih model secara default. Free tier Gemini boleh dipakai Google untuk melatih model. Karena itu prompt hanya berisi statistik (tanpa nama, Steam ID, atau match ID), dan hal ini disebutkan di Privacy Policy.
 
 **Komponen:**
 | Komponen | Isi |
 |---|---|
 | `LlmProvider` (interface) | `id`, `models[]`, `isConfigured()` (key tersedia?), `generate(prompt, options)` |
-| Implementasi | `gemini` (SDK Google GenAI), `openai-compatible` (dipakai untuk Groq, OpenRouter, dan provider lain dengan base URL berbeda) |
+| Implementasi | `anthropic` (SDK resmi Anthropic), `gemini` (SDK Google GenAI), `openai-compatible` (dipakai untuk Groq, OpenRouter, dan provider lain dengan base URL berbeda) |
 | `app_settings.llm` (DB) | `{ enabled, primary: {provider, model}, fallbacks: [...], limits: {perUserPerDay, globalPerDay} }` |
 | LLM router | Coba provider utama, lalu cadangan, lalu teks template. Mencatat pemakaian ke tabel `llm_usage` |
 | Admin UI | Pilih provider/model, atur urutan cadangan, tombol Test, batas pemakaian, grafik pemakaian |
@@ -186,6 +196,7 @@ pepak-doto/
 | Neon Postgres | 0,5 GB storage, 100 CU-jam/bulan, *scale to zero* | Storage > 80% atau cold start mengganggu |
 | OpenDota | 3.000 request/hari, 60/menit | Rata-rata > 2.000/hari, lalu pakai API key berbayar |
 | STRATZ | Batas per token (per detik, jam, hari) | Sering terkena rate limit |
+| Claude API (berbayar) | Tidak ada free tier; dibatasi batas belanja di Anthropic Console | Tagihan mendekati batas belanja, lalu naikkan batas atau turunkan batas harian aplikasi |
 | Gemini API (free tier) | Flash/Flash-Lite, kuota harian | Sering kena batas, lalu tambah provider cadangan atau pertimbangkan model berbayar |
 | Groq / OpenRouter | Kuota harian gratis | Sering habis, lalu naikkan batas atau pakai model berbayar |
 
@@ -259,7 +270,7 @@ Keputusan: D20–D24 di PRD §11.
 ### Tahap 4: Coaching LLM
 | # | Tugas |
 |---|---|
-| 4.1 | Interface `LlmProvider` + implementasi Gemini dan OpenAI-compatible |
+| 4.1 | Interface `LlmProvider` + implementasi Anthropic (Claude), Gemini, dan OpenAI-compatible |
 | 4.2 | LLM router: cadangan, batas pemakaian, pencatatan ke `llm_usage` |
 | 4.3 | Admin UI: pilih model, urutan cadangan, Test, batas, grafik pemakaian |
 | 4.4 | Prompt berbasis fakta (diberi versi) + narasi post-match, tren, cheat sheet |
