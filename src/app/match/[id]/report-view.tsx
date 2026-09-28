@@ -16,9 +16,12 @@ const STAMP: Record<Grade["letter"], string> = {
 export function ReportView({
   report,
   heroes,
+  showSourceLinks = false,
 }: {
   report: MatchReport;
   heroes: Map<number, HeroInfo>;
+  /** Link ke OpenDota/STRATZ hanya untuk admin, supaya user biasa tidak dialihkan ke situs lain. */
+  showSourceLinks?: boolean;
 }) {
   const hero = heroes.get(report.player.heroId);
   const p = report.player;
@@ -70,12 +73,16 @@ export function ReportView({
             <span>
               Match {report.matchId}, {date}
             </span>
-            <ExternalLink href={`https://www.opendota.com/matches/${report.matchId}`}>
-              OpenDota
-            </ExternalLink>
-            <ExternalLink href={`https://stratz.com/matches/${report.matchId}`}>
-              STRATZ
-            </ExternalLink>
+            {showSourceLinks ? (
+              <>
+                <ExternalLink href={`https://www.opendota.com/matches/${report.matchId}`}>
+                  OpenDota
+                </ExternalLink>
+                <ExternalLink href={`https://stratz.com/matches/${report.matchId}`}>
+                  STRATZ
+                </ExternalLink>
+              </>
+            ) : null}
           </p>
         </div>
       </header>
