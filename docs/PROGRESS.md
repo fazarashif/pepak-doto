@@ -31,7 +31,11 @@
   - waktu beli item inti
   - vision
 - **Ringkasan:** maksimal 3 prioritas perbaikan beserta tips, dan hal yang sudah bagus.
-- **Tombol "Parse replay":** halaman mengecek ulang setiap 10 detik, maksimal 5 menit.
+- **Tombol "Parse replay":**
+  - Setelah diminta, halaman mengecek OpenDota setiap 30 detik (tanpa cache) selama maksimal 30 menit, lalu refresh sendiri begitu replay selesai.
+  - Status menunggu disimpan di sessionStorage, jadi tetap ada setelah halaman di-refresh.
+  - Match yang lebih tua dari 14 hari diberi catatan bahwa replay-nya mungkin sudah dihapus Valve.
+  - Tanpa API key, OpenDota menaruh permintaan di antrean prioritas rendah (priority -2). Saat dites 2026-09-28, dua match baru belum selesai setelah 15 menit lebih. Jadi parse lambat itu sifat antrean OpenDota, bukan bug di aplikasi.
 - Match Turbo, match tidak ditemukan, dan data privat masing-masing punya pesan dan ilustrasi sendiri.
 
 ### Test
