@@ -26,6 +26,8 @@ const STATES: { value: GameState; label: string }[] = [
   { value: "ahead", label: "Ahead" },
 ];
 
+const QUICK_MINUTES = [10, 15, 20, 25, 30, 40, 50];
+
 const selectClass =
   "h-11 w-full rounded-md border border-border bg-surface px-3 text-base focus:border-accent-fg focus:outline-none sm:text-sm";
 
@@ -68,6 +70,10 @@ export function LiveSetup({
     const list = state[target];
     if (list.length >= LIMITS[target] || taken.has(h.id)) return;
     update({ [target === "allies" ? "a" : "e"]: [...list, h.id].join(",") });
+  }
+
+  function setMinute(m: number | null) {
+    update({ m: m === null ? null : String(m) });
   }
 
   function remove(group: "allies" | "enemies", id: number) {
@@ -200,7 +206,7 @@ export function LiveSetup({
         </>
       )}
 
-      <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+      <div className="grid gap-4 border-t border-border pt-4">
         <div className="grid gap-2">
           <p id={ids.state} className="text-sm font-medium">
             How is the game going?
@@ -228,23 +234,37 @@ export function LiveSetup({
           </div>
         </div>
         <div className="grid gap-2">
-          <label htmlFor={ids.minute} className="text-sm font-medium">
-            Game time <span className="font-normal text-muted">(min)</span>
-          </label>
-          <input
-            id={ids.minute}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={180}
-            defaultValue={state.minute ?? ""}
-            onBlur={(e) => update({ m: e.target.value || null })}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") update({ m: e.currentTarget.value || null });
-            }}
-            placeholder="Optional"
-            className={selectClass}
-          />
+          <p id={ids.minute} className="text-sm font-medium">
+            Game time{" "}
+            <span className="font-normal text-muted">
+              {state.minute === null ? "(not set)" : `minute ${state.minute}`}
+            </span>
+          </p>
+          <div role="group" aria-labelledby={ids.minute} className="flex flex-wrap gap-1.5">
+            <TimeButton
+              label="−5"
+              aria="5 minutes earlier"
+              onClick={() => setMinute(Math.max(0, (state.minute ?? 0) - 5))}
+              disabled={!state.minute}
+            />
+            {QUICK_MINUTES.map((m) => (
+              <TimeButton
+                key={m}
+                label={m === 50 ? "50+" : String(m)}
+                aria={`Minute ${m}`}
+                pressed={state.minute === m}
+                onClick={() => setMinute(m)}
+              />
+            ))}
+            <TimeButton
+              label="+5"
+              aria="5 minutes later"
+              onClick={() => setMinute(Math.min(180, (state.minute ?? 0) + 5))}
+            />
+            {state.minute !== null ? (
+              <TimeButton label="Clear" aria="Clear game time" onClick={() => setMinute(null)} />
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -336,5 +356,37 @@ function TeamRow({
         ) : null}
       </ul>
     </div>
+  );
+}
+
+function TimeButton({
+  label,
+  aria,
+  onClick,
+  pressed,
+  disabled = false,
+}: {
+  label: string;
+  aria: string;
+  onClick: () => void;
+  pressed?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={aria}
+      aria-pressed={pressed}
+      className={cn(
+        "h-9 min-w-11 cursor-pointer rounded-full border px-3 font-mono text-sm tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+        pressed
+          ? "border-accent-fg bg-accent text-on-accent"
+          : "border-border text-muted hover:bg-surface-2 hover:text-fg",
+      )}
+    >
+      {label}
+    </button>
   );
 }

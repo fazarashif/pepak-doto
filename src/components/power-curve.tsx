@@ -17,8 +17,11 @@ export function PowerCurve({
   series,
   label,
   note,
+  marker,
 }: {
   series: CurveSeries[];
+  /** Menit sekarang, digambar sebagai garis tegak. */
+  marker?: number | null;
   /** Ringkasan untuk pembaca layar. */
   label: string;
   note: string;
@@ -62,6 +65,25 @@ export function PowerCurve({
         <text x={2} y={y(-RANGE)} className="fill-muted font-mono text-[9px]">
           worse
         </text>
+        {marker !== null && marker !== undefined && marker >= CURVE_FROM ? (
+          <g>
+            <line
+              x1={x(Math.min(marker, CURVE_TO))}
+              x2={x(Math.min(marker, CURVE_TO))}
+              y1={PAD.top}
+              y2={H - PAD.bottom}
+              className="stroke-fg/60"
+              strokeWidth={1}
+            />
+            <text
+              x={x(Math.min(marker, CURVE_TO)) + 3}
+              y={PAD.top + 7}
+              className="fill-fg font-mono text-[8px]"
+            >
+              now
+            </text>
+          </g>
+        ) : null}
         {/* Seri "muted" digambar dulu supaya garis utama berada di atas. */}
         {[...series]
           .sort((a, b) => Number(a.variant === "accent") - Number(b.variant === "accent"))

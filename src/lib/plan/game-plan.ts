@@ -151,3 +151,55 @@ export function buildGamePlan(input: {
 
   return { curve, timing, switchMinute, summary, stateTip, dangers };
 }
+
+export interface Moment {
+  minute: number;
+  /** Keunggulan tim sendiri di menit ini (poin). */
+  edge: number;
+  text: string;
+}
+
+const EDGE_CLEAR = 0.01;
+
+/** Keadaan di menit tertentu menurut kurva kekuatan kedua tim. */
+export function momentAt(curve: PowerPoint[], minute: number): Moment | null {
+  if (!curve.length) return null;
+  if (minute < CURVE_FROM) {
+    return {
+      minute,
+      edge: 0,
+      text: "It's still early. Game length doesn't say much yet, so focus on your lane.",
+    };
+  }
+  const bin = Math.min(CURVE_TO, Math.floor(minute / 5) * 5);
+  const point = curve.find((p) => p.minute === bin);
+  if (!point) return null;
+  const edge = point.allies - point.enemies;
+  const later = curve.filter((p) => p.minute > bin);
+
+  if (edge > EDGE_CLEAR) {
+    const fades = later.find((p) => p.allies - p.enemies < 0);
+    return {
+      minute,
+      edge,
+      text: fades
+        ? `Right now your lineup has the edge, and it lasts until about minute ${fades.minute}. Group up and take fights and objectives.`
+        : "Right now your lineup has the edge. Group up and take fights and objectives.",
+    };
+  }
+  if (edge < -EDGE_CLEAR) {
+    const turns = later.find((p) => p.allies - p.enemies > 0);
+    return {
+      minute,
+      edge,
+      text: turns
+        ? `Right now their lineup has the edge. Farm safely and avoid even fights until about minute ${turns.minute}.`
+        : "Right now their lineup has the edge, and it doesn't get better later. Look for pickoffs and don't let the game drag on.",
+    };
+  }
+  return {
+    minute,
+    edge,
+    text: "Right now neither lineup has a clear edge. Play around your item timings.",
+  };
+}
