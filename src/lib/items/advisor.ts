@@ -269,3 +269,33 @@ export function advise(input: AdvisorInput): Advice {
 
   return { role, starting, boots, phases, situational: sorted, enemyDamage };
 }
+
+/** Item inti yang dianggap patokan waktu; item murah seperti Magic Wand dilewati. */
+const NEXT_ITEM_MIN_COST = 1000;
+/** Terlambat sekian menit dari kebanyakan pemain dianggap "tertinggal". */
+const BEHIND_MINUTES = 5;
+
+export interface NextItem {
+  entry: BuildEntry;
+  /** Item inti sesudahnya, untuk gambaran urutan. */
+  then: BuildEntry[];
+  /** Selisih menit sekarang dengan menit beli yang biasa (positif = terlambat). Null kalau menit tidak diisi. */
+  lateBy: number | null;
+  status: "unknown" | "early" | "onTrack" | "late" | "behind";
+}
+
+/** Item inti berikutnya yang belum dimiliki, dan apakah pemain masih sesuai jadwal. */
+export function nextItem(advice: Advice, minute: number | null): NextItem | null {
+  const core = [...advice.phases.early, ...advice.phases.mid, ...advice.phases.late]
+    .filter((e) => e.item.cost >= NEXT_ITEM_MIN_COST)
+    .sort((a, b) => a.medianMinute - b.medianMinute);
+  const pending = core.filter((e) => !e.owned);
+  if (!pending.length) return null;
+  const entry = pending[0];
+  if (minute === null) return { entry, then: pending.slice(1, 3), lateBy: null, status: "unknown" };
+
+  const lateBy = minute - entry.medianMinute;
+  const status =
+    lateBy <= -3 ? "early" : lateBy <= 1 ? "onTrack" : lateBy < BEHIND_MINUTES ? "late" : "behind";
+  return { entry, then: pending.slice(1, 3), lateBy, status };
+}

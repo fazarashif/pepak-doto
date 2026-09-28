@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DurationBin, ItemBuild } from "@/lib/hero-data/types";
 import {
   advise,
+  nextItem,
   phaseFor,
   roleFor,
   teamDamage,
@@ -9,7 +10,7 @@ import {
   type ItemInfo,
 } from "@/lib/items/advisor";
 import type { HeroTraitsFile } from "@/lib/items/traits";
-import { buildGamePlan, heroStrength } from "@/lib/plan/game-plan";
+import { buildGamePlan, heroStrength, momentAt } from "@/lib/plan/game-plan";
 import type { HeroProfile } from "@/lib/stratz/api";
 
 const item = (id: number, key: string, cost: number, extra: Partial<ItemInfo> = {}): ItemInfo => ({
@@ -304,5 +305,55 @@ describe("buildGamePlan", () => {
 
   it("adds a tip when behind", () => {
     expect(plan(lateHero, lateHero, "behind" as never).stateTip).toMatch(/You're behind/);
+  });
+});
+
+describe("nextItem", () => {
+  const advice = advise(base);
+
+  it("skips cheap items and picks the next core item", () => {
+    const n = nextItem(advice, null);
+    expect(n?.entry.item.key).toBe("bfury");
+    expect(n?.then.map((e) => e.item.key)).toEqual(["manta", "black_king_bar"]);
+    expect(n?.status).toBe("unknown");
+  });
+
+  it("compares the game time with the usual timing", () => {
+    expect(nextItem(advice, 11)?.status).toBe("early");
+    expect(nextItem(advice, 15)?.status).toBe("onTrack");
+    expect(nextItem(advice, 18)?.status).toBe("late");
+    const behind = nextItem(advice, 22);
+    expect(behind?.status).toBe("behind");
+    expect(behind?.lateBy).toBe(7);
+  });
+
+  it("moves on once an item is bought", () => {
+    const owned = advise({ ...base, owned: [145] });
+    expect(nextItem(owned, 20)?.entry.item.key).toBe("manta");
+  });
+});
+
+describe("momentAt", () => {
+  const curve = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((minute) => ({
+    minute,
+    allies: minute < 35 ? 0.05 : -0.05,
+    enemies: 0,
+  }));
+
+  it("says who has the edge now and until when", () => {
+    expect(momentAt(curve, 22)?.text).toBe(
+      "Right now your lineup has the edge, and it lasts until about minute 35. Group up and take fights and objectives.",
+    );
+    expect(momentAt(curve, 41)?.text).toMatch(
+      /^Right now their lineup has the edge, and it doesn't get better later/,
+    );
+  });
+
+  it("keeps quiet about game length early on", () => {
+    expect(momentAt(curve, 8)?.text).toMatch(/^It's still early/);
+  });
+
+  it("treats very long games as the last bin", () => {
+    expect(momentAt(curve, 75)?.edge).toBeCloseTo(-0.05);
   });
 });

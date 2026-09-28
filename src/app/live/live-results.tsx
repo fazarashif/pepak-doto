@@ -4,6 +4,7 @@ import { PowerCurve } from "@/components/power-curve";
 import { cn } from "@/lib/cn";
 import { pct } from "@/lib/dota";
 import {
+  nextItem,
   phaseFor,
   type Advice,
   type BuildEntry,
@@ -11,7 +12,7 @@ import {
   type Phase,
   type SituationalEntry,
 } from "@/lib/items/advisor";
-import type { GamePlan } from "@/lib/plan/game-plan";
+import { momentAt, type GamePlan } from "@/lib/plan/game-plan";
 import { OwnedToggle } from "./owned-toggle";
 
 const PHASE_LABEL: Record<Phase, string> = {
@@ -46,8 +47,25 @@ export function LiveResults({
     ...advice.situational.filter((s) => s.owned),
   ];
 
+  const next = missingBuild ? null : nextItem(advice, minute);
+  const moment = minute !== null && hasEnemies ? momentAt(plan.curve, minute) : null;
+
   return (
     <div className="grid gap-10">
+      {next || moment ? (
+        <section aria-label="Right now" className="grid gap-3 sm:grid-cols-2">
+          {next ? <NextItemCard next={next} minute={minute} /> : null}
+          {moment ? (
+            <div className="grid content-start gap-1 rounded-lg border border-border bg-surface p-4">
+              <p className="text-xs text-muted">Minute {minute}</p>
+              <p className={cn("font-medium", moment.edge < -0.01 && "text-danger")}>
+                {moment.text}
+              </p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <FramedPanel as="section" tab="Counters" className="p-5 sm:p-6">
         <div className="grid gap-4">
           <div className="grid gap-1">
@@ -148,7 +166,9 @@ export function LiveResults({
           <>
             <MarginNote className="text-lg not-italic">{plan.summary}</MarginNote>
             {plan.stateTip ? <p className="text-sm">{plan.stateTip}</p> : null}
+
             <PowerCurve
+              marker={minute}
               label={`How each lineup does by game length. ${plan.summary}`}
               note="Win rate compared with each hero's average, by game length in minutes."
               series={[
@@ -200,6 +220,66 @@ export function LiveResults({
             ))}
           </ul>
         </section>
+      ) : null}
+    </div>
+  );
+}
+
+const NEXT_STATUS: Record<
+  Exclude<ReturnType<typeof nextItem>, null>["status"],
+  (lateBy: number, usual: number) => string
+> = {
+  unknown: (_, usual) =>
+    `Most players have it by minute ${usual}. Enter the game time to check your pace.`,
+  early: (lateBy, usual) =>
+    `Most players have it by minute ${usual}. You're ${-lateBy} minutes ahead of that.`,
+  onTrack: (_, usual) => `Most players have it by minute ${usual}. You're on track.`,
+  late: (lateBy, usual) =>
+    `Most players have it by minute ${usual}, so you're ${lateBy} ${lateBy === 1 ? "minute" : "minutes"} behind. Farm safely until it's done.`,
+  behind: (lateBy, usual) =>
+    `Most players have it by minute ${usual}, so you're ${lateBy} minutes behind.`,
+};
+
+function NextItemCard({
+  next,
+  minute,
+}: {
+  next: NonNullable<ReturnType<typeof nextItem>>;
+  minute: number | null;
+}) {
+  const { entry } = next;
+  const status = NEXT_STATUS[next.status](next.lateBy ?? 0, entry.medianMinute);
+  const lateGap =
+    entry.onTimeWinRate !== null && entry.lateWinRate !== null
+      ? entry.onTimeWinRate - entry.lateWinRate
+      : null;
+  return (
+    <div
+      className={cn(
+        "grid content-start gap-2 rounded-lg border bg-surface p-4",
+        next.status === "behind" ? "border-danger" : "border-accent-fg",
+      )}
+    >
+      <p className="text-xs text-muted">
+        Next core item{minute !== null ? ` at minute ${minute}` : ""}
+      </p>
+      <div className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3">
+        <ItemIcon item={entry.item} className="w-14" />
+        <p className="font-display text-lg font-bold">{entry.item.name}</p>
+        <OwnedToggle itemId={entry.item.id} owned={false} name={entry.item.name} />
+      </div>
+      <p className="text-sm">{status}</p>
+      {next.status === "behind" && lateGap !== null && lateGap > 0.03 ? (
+        <p className="text-sm text-muted">
+          Players who get it later win {pct(entry.lateWinRate!, 0)} of games instead of{" "}
+          {pct(entry.onTimeWinRate!, 0)}. A cheaper item from the counter list can help you survive
+          until it&apos;s done.
+        </p>
+      ) : null}
+      {next.then.length ? (
+        <p className="text-xs text-muted">
+          Then: {next.then.map((e) => `${e.item.name} (~${e.medianMinute})`).join(", ")}
+        </p>
       ) : null}
     </div>
   );

@@ -85,6 +85,7 @@ Kesimpulan:
 - Isi: item untuk melawan lineup musuh beserta alasannya, build biasa per fase (starting, boots, laning, mid, late) dengan waktu beli, kurva kekuatan kedua tim menurut durasi, komposisi damage musuh, dan skill musuh yang perlu diwaspadai.
 - Tombol "Got it?" menandai item yang sudah dibeli. Pilihan Behind/Even/Ahead mengubah urutan saran dan menambah tips. Game time menyorot fase yang sedang berjalan. Semua disimpan di URL.
 - Setelah hero dan musuh terisi, setelan dilipat supaya di HP hasilnya langsung terlihat.
+- **Game time** (tombol cepat 10–50, ±5): kartu "Next core item" di atas (item inti berikutnya yang belum dibeli, dibanding menit beli yang biasa: lebih cepat / sesuai / terlambat / tertinggal, plus beda winrate kalau terlambat), kalimat "Right now" dari kurva kekuatan, dan garis "now" di grafik.
 
 ### Cheat sheet (`/heroes/[id]`)
 - Hero yang meng-counter (per kelompok rank), item yang membantu per peran, skill berbahaya, kapan hero paling kuat, item penting hero tersebut, dan hero yang lemah melawannya.
