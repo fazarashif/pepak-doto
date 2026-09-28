@@ -208,16 +208,16 @@ Pemakaian semua layanan ini ditampilkan di **panel admin** (F11) agar keputusan 
 **Selesai bila:** aplikasi live di Vercel, bisa login Steam, profil tersimpan, admin bisa membuka `/admin`, hero picker berfungsi, dan test jalan.
 
 ### Tahap 1: MVP: Draft Assistant + Post-Match Analyzer
-| # | Tugas |
-|---|---|
-| 1.1 | `draft/engine.ts`: counter + synergy (STRATZ), meta, hero pool, komposisi, posisi, ban, peringatan. Rumus di §8 |
-| 1.2 | `MatchupProvider`: STRATZ (utama), OpenDota (cadangan) |
-| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB |
-| 1.4 | `POST /api/draft` + halaman `/draft` |
-| 1.5 | Unit test engine + script backtest |
-| 1.6 | `match/analyze.ts`: nilai, laning, kematian, waktu item, vision, prioritas perbaikan. **Turbo ditolak** |
-| 1.7 | API match (detail, parse, recent tanpa Turbo) + halaman `/match` dan `/match/[id]` |
-| 1.8 | Unit test analyzer + smoke test E2E |
+| # | Tugas | Status |
+|---|---|---|
+| 1.1 | `draft/engine.ts`: counter + synergy (STRATZ), meta, hero pool, komposisi, posisi, ban, peringatan. Rumus di §8 | ✅ |
+| 1.2 | Sumber data: STRATZ (utama), OpenDota (cadangan) | ✅ (`draft/data.ts`) |
+| 1.3 | Vercel Cron: refresh heroStats + data matchup STRATZ tiap hari ke DB | ⬜ Belum perlu: cache DB 12–24 jam sudah cukup |
+| 1.4 | `POST /api/draft` + halaman `/draft` | ✅ |
+| 1.5 | Unit test engine + script backtest | ✅ test, ⬜ backtest |
+| 1.6 | `match/analyze.ts`: nilai, laning, kematian, waktu item, vision, prioritas perbaikan. **Turbo ditolak** | ✅ |
+| 1.7 | Match (detail, parse, recent tanpa Turbo) + halaman `/match` dan `/match/[id]` | ✅ (server component + server action, tanpa API terpisah) |
+| 1.8 | Unit test analyzer + smoke test E2E | ✅ test, ⬜ E2E |
 
 ### Tahap 2: In-game
 | # | Tugas |
@@ -266,7 +266,9 @@ skor         = 1,0·counter + 0,6·synergy + 0,7·meta + komposisi + pool
 ```
 - *winrate_halus* = (menang + k·50%) / (game + k), supaya sampel kecil tidak ekstrem.
 - Bobot dikalibrasi dengan backtest.
-- **Nilai post-match:** A ≥ persentil 75, B ≥ 50, C ≥ 25, D < 25. Untuk kematian, persentil dibalik.
+- **Nilai post-match:** A ≥ persentil 75, B ≥ 50, C ≥ 25, D < 25. Persentil kematian dari OpenDota sudah "makin tinggi makin baik", jadi **tidak** dibalik.
+- **Meta dan filter posisi** memakai data STRATZ per posisi per bracket. Hero dengan < 10% game di posisi yang dipilih disembunyikan.
+- **Waktu item** hanya dibandingkan dengan bucket yang lebih cepat dari waktu pemain.
 
 ## 9. Bekerja dari dua laptop
 1. Kedua laptop: install **Node 22 LTS**, Git, dan GitHub CLI, lalu `git clone https://github.com/fazarashif/pepak-doto.git`.
