@@ -15,7 +15,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
     "backtest": "tsx scripts/backtest.ts",
-    "sync:hero-data": "tsx scripts/sync-hero-data.ts"
+    "sync:hero-data": "tsx scripts/sync-hero-data.ts",
+    "draft:hero-traits": "tsx scripts/draft-hero-traits.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

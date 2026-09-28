@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import traitsFile from "../data/hero-traits.json";
 import { mainPositions, summarizeItems } from "@/lib/hero-data/types";
+import { HERO_TRAITS, type HeroTraitsFile } from "@/lib/items/traits";
 import type { RawHeroItems } from "@/lib/stratz/api";
 
 const raw: RawHeroItems = {
@@ -72,5 +74,23 @@ describe("mainPositions", () => {
 
   it("returns nothing for an unknown hero", () => {
     expect(mainPositions(rows, 50)).toEqual([]);
+  });
+});
+
+describe("data/hero-traits.json", () => {
+  const file = traitsFile as HeroTraitsFile;
+
+  it("only uses known traits", () => {
+    for (const [id, hero] of Object.entries(file.heroes)) {
+      for (const t of hero.traits) expect(HERO_TRAITS, `${id} ${hero.name}`).toContain(t);
+    }
+  });
+
+  it("lists at least one dangerous ability per hero, without duplicates", () => {
+    for (const hero of Object.values(file.heroes)) {
+      expect(hero.dangerous.length).toBeGreaterThan(0);
+      expect(new Set(hero.dangerous).size).toBe(hero.dangerous.length);
+      expect(new Set(hero.traits).size).toBe(hero.traits.length);
+    }
   });
 });
