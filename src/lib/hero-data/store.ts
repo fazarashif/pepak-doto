@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { cached, HOUR, MINUTE } from "@/lib/cache";
 import { getDb, schema } from "@/lib/db";
+import { buildVsMatrix, matrixSize, type VsMatrix } from "@/lib/draft/matrix";
 import { opendota } from "@/lib/opendota/client";
 import {
   fetchHeroProfiles,
@@ -119,6 +120,26 @@ export function getMatchups(heroId: number, bracket: number): Promise<HeroMatchu
     "stratz",
     stratzLive(async () => (await fetchMatchups(stratzGql(), [heroId], b)).get(heroId)!),
   );
+}
+
+/**
+ * Keunggulan semua hero melawan semua hero. Disimpan oleh sinkron harian; kalau belum ada,
+ * disusun dari baris matchup yang sudah ada di database (tidak perlu STRATZ).
+ */
+export function getVsMatrix(bracket: number): Promise<VsMatrix | null> {
+  const b = toStratzBracket(bracket);
+  return load({ kind: "vsmatrix", bracket: b, heroId: 0, position: 0 }, "stratz", async () => {
+    const db = await getDb();
+    const t = schema.heroData;
+    const rows = await db
+      .select({ heroId: t.heroId, value: t.value })
+      .from(t)
+      .where(and(eq(t.kind, "matchups"), eq(t.bracket, b)));
+    const matrix = buildVsMatrix(rows.map((r) => [r.heroId, (r.value as HeroMatchups).vs]));
+    // Jangan simpan tabel kosong; nanti dicoba lagi setelah sinkron berjalan.
+    if (!matrixSize(matrix)) throw new Error("no matchup rows yet");
+    return matrix;
+  });
 }
 
 export function getItemBuild(

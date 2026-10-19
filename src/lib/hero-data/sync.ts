@@ -12,9 +12,11 @@ import {
   fetchPositions,
   StratzError,
   type Gql,
+  type HeroMatchups,
   type HeroPositionKey,
 } from "@/lib/stratz/api";
 import type { StratzBracket } from "@/lib/stratz/brackets";
+import { buildVsMatrix } from "@/lib/draft/matrix";
 import { mainPositions, summarizeItems, type DurationBin, type HeroDataRow } from "./types";
 import { upsertHeroData, writeSyncStatus, type SyncStatus } from "./write";
 
@@ -118,9 +120,11 @@ export async function syncHeroData(opts: SyncOptions): Promise<SyncStatus> {
       .sort((a, b) => a - b);
     if (bracket === "ALL") allHeroIds = heroIds;
 
+    const vsTables = new Map<number, HeroMatchups["vs"]>();
     for (const group of chunks(heroIds, MATCHUP_BATCH)) {
       try {
         const result = await fetchMatchups(gql, group, bracket);
+        for (const [heroId, table] of result) vsTables.set(heroId, table.vs);
         await save(
           group.map((heroId) => ({
             kind: "matchups" as const,
@@ -137,6 +141,20 @@ export async function syncHeroData(opts: SyncOptions): Promise<SyncStatus> {
       }
     }
     log(`[${bracket}] matchups done for ${heroIds.length} heroes`);
+
+    // Tabel lengkap hanya kalau semua hero ikut, supaya tidak menimpa tabel yang lengkap.
+    if (!opts.heroIds && vsTables.size) {
+      await save([
+        {
+          kind: "vsmatrix",
+          bracket,
+          heroId: 0,
+          position: 0,
+          source: "stratz",
+          value: buildVsMatrix(vsTables),
+        },
+      ]);
+    }
 
     const combos: (HeroPositionKey & { games: number })[] = heroIds.flatMap((heroId) =>
       mainPositions(positions, heroId).map((p) => ({

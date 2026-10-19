@@ -3,8 +3,10 @@
 
 import type { HeroMatchups, HeroPositionStat, HeroProfile, RawHeroItems } from "@/lib/stratz/api";
 import type { StratzBracket } from "@/lib/stratz/brackets";
+import type { VsMatrix } from "@/lib/draft/matrix";
 
-export type HeroDataKind = "positions" | "profiles" | "matchups" | "items" | "durations";
+export type HeroDataKind =
+  "positions" | "profiles" | "matchups" | "vsmatrix" | "items" | "durations";
 
 /** Satu baris `hero_data`. heroId 0 dan position 0 berarti "semua". */
 export interface HeroDataRow<T = unknown> {
@@ -20,6 +22,7 @@ export interface HeroDataValues {
   positions: HeroPositionStat[];
   profiles: HeroProfile[];
   matchups: HeroMatchups;
+  vsmatrix: VsMatrix;
   items: ItemBuild;
   durations: DurationBin[];
 }
