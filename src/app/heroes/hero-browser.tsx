@@ -28,6 +28,7 @@ export function HeroBrowser({ heroes }: { heroes: HeroWithMeta[] }) {
         heroes={heroes}
         selectedIds={selectedIds}
         onPick={(hero) => router.replace(`${pathname}?hero=${hero.id}`, { scroll: false })}
+        enterVerb="open"
         className="order-2 lg:order-1"
       />
 

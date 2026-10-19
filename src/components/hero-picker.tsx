@@ -1,12 +1,13 @@
 "use client";
 
-import { useDeferredValue, useId, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { MaskedSvg, Ribbon } from "@/components/brand";
 import { HeroPortrait } from "@/components/hero-portrait";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { ATTR_LABEL, type HeroInfo } from "@/lib/dota";
+import { searchHeroes } from "@/lib/hero-search";
 
 // "all" di data hero berarti Universal, jadi filter memakai nama sendiri agar tidak tertukar.
 type AttrFilter = "any" | HeroInfo["primaryAttr"];
@@ -26,6 +27,18 @@ interface Props {
   selectedIds?: ReadonlySet<number>;
   /** Hero yang tidak bisa dipilih, mis. sudah di-pick atau di-ban. */
   disabledIds?: ReadonlySet<number>;
+  /**
+   * Ketikan di mana saja di halaman (di luar kolom isian) langsung masuk ke kolom cari.
+   * Hanya berlaku selama pemilih ini terlihat.
+   */
+  captureTyping?: boolean;
+  /**
+   * Dipanggil saat ada ketikan tapi pemilih tersembunyi. Kembalikan true kalau pemilih
+   * baru saja ditampilkan (mis. dialog dibuka), supaya ketikan tetap masuk ke kolom cari.
+   */
+  revealOnType?: () => boolean;
+  /** Kata kerja di petunjuk Enter, mis. "add" untuk "Press Enter to add Pudge". */
+  enterVerb?: string;
   className?: string;
 }
 
@@ -36,20 +49,75 @@ export function HeroPicker({
   onPick,
   selectedIds = EMPTY,
   disabledIds = EMPTY,
+  captureTyping = false,
+  revealOnType,
+  enterVerb = "pick",
   className,
 }: Props) {
   const [query, setQuery] = useState("");
   const [attr, setAttr] = useState<AttrFilter>("any");
   const deferredQuery = useDeferredValue(query);
   const searchId = useId();
+  const hintId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const visible = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase();
-    return heroes.filter((h) => {
-      if (attr !== "any" && h.primaryAttr !== attr) return false;
-      return !q || h.name.toLowerCase().includes(q);
-    });
-  }, [heroes, deferredQuery, attr]);
+  const visible = useMemo(
+    () =>
+      searchHeroes(
+        heroes.filter((h) => attr === "any" || h.primaryAttr === attr),
+        deferredQuery,
+      ),
+    [heroes, deferredQuery, attr],
+  );
+  // Enter memilih hasil teratas yang masih bisa dipilih. Dihitung dari `query` (bukan versi
+  // tertunda) supaya Enter tepat setelah mengetik memilih hero yang benar.
+  const firstMatch = useMemo(
+    () =>
+      query.trim()
+        ? searchHeroes(
+            heroes.filter((h) => attr === "any" || h.primaryAttr === attr),
+            query,
+          ).find((h) => !disabledIds.has(h.id))
+        : undefined,
+    [heroes, query, attr, disabledIds],
+  );
+
+  function pick(hero: HeroInfo) {
+    onPick(hero);
+    setQuery("");
+  }
+
+  useEffect(() => {
+    if (!captureTyping) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const input = inputRef.current;
+      if (!input || e.defaultPrevented) return;
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        e.key.length !== 1 ||
+        !/[\p{L}\p{N}]/u.test(e.key)
+      ) {
+        return;
+      }
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']")) {
+        return;
+      }
+      // Dialog lain yang terbuka (mis. pemilih versi HP) tidak boleh kehilangan ketikan.
+      if (document.querySelector("dialog[open]") && !input.closest("dialog[open]")) return;
+      // offsetParent null berarti pemilih sedang tersembunyi (mis. dialog tertutup).
+      if (input.offsetParent === null && !(revealOnType?.() && input.offsetParent !== null)) {
+        return;
+      }
+      e.preventDefault();
+      setQuery((q) => q + e.key);
+      input.focus();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [captureTyping, revealOnType]);
 
   return (
     <div className={cn("grid gap-4", className)}>
@@ -65,15 +133,38 @@ export function HeroPicker({
               className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
             />
             <input
+              ref={inputRef}
               id={searchId}
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Pudge"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && firstMatch) {
+                  e.preventDefault();
+                  pick(firstMatch);
+                } else if (e.key === "Escape" && query) {
+                  // Hapus kata kunci dulu; Escape kedua baru menutup dialog.
+                  e.preventDefault();
+                  setQuery("");
+                }
+              }}
+              aria-describedby={hintId}
+              placeholder="e.g. Pudge, am, cm"
               autoComplete="off"
               className="h-11 w-full rounded-md border border-border bg-surface pr-3 pl-10 text-base placeholder:text-muted/80 focus:border-accent-fg focus:outline-none sm:text-sm"
             />
           </div>
+          <p id={hintId} className="text-xs text-muted">
+            {firstMatch ? (
+              <>
+                Press Enter to {enterVerb} <span className="text-fg">{firstMatch.name}</span>.
+              </>
+            ) : captureTyping ? (
+              "Start typing anywhere to search. Short names like am, cm or kotl work too."
+            ) : (
+              "Short names like am, cm or kotl work too."
+            )}
+          </p>
         </div>
 
         <div role="group" aria-label="Filter by attribute" className="flex flex-wrap gap-2">
@@ -127,7 +218,7 @@ export function HeroPicker({
               <li key={hero.id}>
                 <button
                   type="button"
-                  onClick={() => onPick(hero)}
+                  onClick={() => pick(hero)}
                   disabled={disabled}
                   aria-pressed={selected}
                   className={cn(
