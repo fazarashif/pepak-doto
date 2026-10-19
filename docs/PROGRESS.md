@@ -134,6 +134,19 @@ Kesimpulan:
 - **Belum diuji dengan API sungguhan:** belum ada key. Alur cadangan dan pemeriksaan diuji dengan provider tiruan. Setelah key diisi, cek lewat tombol Test di /admin.
 - Test: 125 unit test.
 
+## Draft mengikuti Ranked All Pick (2026-10-19)
+
+Branch `feat/draft-rounds`. Keputusan D34–D38 di PRD.
+
+- **Ronde pick** (1/2/3, dipilih user). Musuh yang belum di-pick dinilai dari tabel keunggulan semua hero melawan semua hero (`vsmatrix` di `hero_data`). Untuk tiap posisi musuh yang kosong dihitung rata-rata (ditimbang popularitas hero di posisi itu) dan rata-rata 2 counter terburuk dari 15 hero terpopuler. Musuh yang memilih setelah melihat pick kita (ronde 1: 3 pick, ronde 2: 1, ronde 3: 0) dinilai setengah jalan ke counter terburuk.
+- **Posisi:** tim sendiri disimpan per posisi (`?a=8:1,26:5`), musuh ditebak dengan kombinasi posisi paling mungkin (`src/lib/draft/positions.ts`) dan bisa diubah (`?e=5,129:4`). Link lama tanpa posisi tetap terbaca.
+- **Saran per posisi kosong**, posisi user di depan. Hero pool hanya untuk posisi user.
+- **Lane:** counter ke lawan satu lane berbobot 2, plus panel Lanes.
+- **Input:** `src/lib/hero-search.ts` (singkatan, nama panggilan, urutan kecocokan), Enter memilih hasil teratas, ketikan di luar kolom cari masuk ke pencarian.
+- **Tabel `vsmatrix`** ditulis sinkron harian setelah matchup tiap bracket. Kalau belum ada, aplikasi menyusunnya dari baris matchup di database (tanpa STRATZ) lalu menyimpannya.
+- **Backtest** (3.944 match, posisi ditebak): akurasi 57.1% dan AUC 0.594, dari 56.3% dan 0.591 sebelumnya. Bobot hasil fit tetap sekitar 1 / 0.2 / 0.5. Bobot lane 2 sedikit lebih baik dari 1, 3, dan 5, tapi masih dalam noise (±1.6 poin). Efek ronde tidak bisa di-backtest karena match publik tidak menyimpan urutan pick.
+- Test: 147 unit test.
+
 ## Temuan Tahap 2
 - **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).
 - STRATZ punya data pembelian item per menit (`itemFullPurchase`), starting items, boots, winrate per durasi (`stats` dengan `groupByTime`), dan rata-rata damage physical/magic/pure, stun, heal, serta invisible per hero. Semua per posisi per bracket.
