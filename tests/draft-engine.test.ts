@@ -191,9 +191,9 @@ describe("recommend", () => {
 });
 
 describe("enemies who have not picked yet", () => {
-  // Two offlaners: Foxtrot and the more popular Golf. Alpha loses hard to Foxtrot only,
+  // Two offlaners: Foxtrot and the more popular Golf. Alpha loses to both (hard to Foxtrot),
   // Echo doesn't care about either.
-  const vsMatrix = { 1: { 6: -5, 7: 0, 3: 0, 4: 0 }, 5: { 6: 0, 7: 0, 3: 0, 4: 0 } };
+  const vsMatrix = { 1: { 6: -5, 7: -2, 3: 0, 4: 0 }, 5: { 6: 0, 7: 0, 3: 0, 4: 0 } };
   const withGolf = (patch: Partial<DraftData> = {}) => {
     const data = baseData({ vsMatrix, ...patch });
     data.heroes = [...data.heroes, hero(7, "Golf", ["Initiator"])];
@@ -224,6 +224,15 @@ describe("enemies who have not picked yet", () => {
 
   it("says nothing about later counters in the last round", () => {
     const result = recommend(input({ round: 3 }), withGolf());
+    const reasons = allPicks(result).flatMap((p) => p.reasons);
+    expect(reasons.some((r) => r.kind === "blind" || r.text.startsWith("Easy to counter"))).toBe(
+      false,
+    );
+  });
+
+  it("labels nobody when every hero is as easy to counter as the next", () => {
+    const same = { 1: { 6: -5, 7: -2, 3: 0, 4: 0 }, 5: { 6: -5, 7: -2, 3: 0, 4: 0 } };
+    const result = recommend(input({ round: 1 }), withGolf({ vsMatrix: same }));
     const reasons = allPicks(result).flatMap((p) => p.reasons);
     expect(reasons.some((r) => r.kind === "blind" || r.text.startsWith("Easy to counter"))).toBe(
       false,

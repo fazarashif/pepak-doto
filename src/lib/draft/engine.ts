@@ -124,6 +124,15 @@ export const PICKS_AFTER_ROUND: Record<DraftRound, number> = { 1: 3, 2: 1, 3: 0 
 const RESPONSE_PENALTY = 0.5;
 /** Hero terpopuler per posisi yang dianggap sebagai calon counter. */
 const THREAT_POOL = 15;
+/**
+ * Label "mudah di-counter" dan "sulit di-counter" diberikan ke 20% hero terbawah dan teratas
+ * menurut risiko counter, dibandingkan antar hero di draft yang sama. Batas tetap tidak cocok:
+ * dengan data lengkap hampir semua hero punya satu counter -2.5% atau lebih buruk di antara
+ * hero populer (83-92% hero di tiap kelompok rank, data backtest 2026-10-19).
+ */
+const RISK_TAIL = 0.2;
+/** Label "mudah di-counter" hanya kalau risikonya juga cukup besar, bukan sekadar terbawah. */
+const MIN_RISK_TO_WARN = -1.5;
 const META_SHRINK = 500;
 const POOL_SHRINK = 10;
 export const MIN_POSITION_SHARE = 0.1;
@@ -292,6 +301,41 @@ function unknownEstimator(data: DraftData, taken: Set<number>) {
   };
 }
 
+/**
+ * Risiko di-counter oleh pick musuh berikutnya: rata-rata, atas posisi musuh yang masih
+ * kosong, dari dua counter terburuk di posisi itu. Juga mengembalikan satu counter terburuk
+ * sebagai contoh. Null kalau datanya tidak ada.
+ */
+function counterRisk(
+  heroId: number,
+  openEnemy: number[],
+  estimate: NonNullable<ReturnType<typeof unknownEstimator>>,
+) {
+  const threats = openEnemy
+    .map((q) => estimate(heroId, q))
+    .filter((t): t is UnknownEstimate => t !== null && t.worstHeroId !== null);
+  if (!threats.length) return null;
+  const worst = threats.reduce((a, b) => (b.worstValue < a.worstValue ? b : a));
+  return { risk: mean(threats.map((t) => t.worst)), worst };
+}
+
+/** Batas 20% terbawah dan teratas risiko counter di antara semua hero yang belum diambil. */
+function riskCutoffs(
+  data: DraftData,
+  taken: Set<number>,
+  openEnemy: number[],
+  estimate: NonNullable<ReturnType<typeof unknownEstimator>>,
+) {
+  const risks = data.heroes
+    .filter((h) => !taken.has(h.id))
+    .map((h) => counterRisk(h.id, openEnemy, estimate)?.risk)
+    .filter((r): r is number => r !== undefined)
+    .sort((a, b) => a - b);
+  if (!risks.length) return null;
+  const at = (p: number) => risks[Math.round((risks.length - 1) * p)];
+  return { low: at(RISK_TAIL), high: at(1 - RISK_TAIL) };
+}
+
 export function openPositions(allies: DraftSlot[]) {
   return ALL_POSITIONS.filter((p) => !allies.some((a) => a.position === p));
 }
@@ -308,6 +352,11 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
   const openEnemy = ALL_POSITIONS.filter((p) => !input.enemies.some((e) => e.position === p));
   const responders = Math.min(openEnemy.length, PICKS_AFTER_ROUND[input.round]);
   const responseShare = openEnemy.length ? responders / openEnemy.length : 0;
+  // Label risiko counter hanya berarti kalau masih ada musuh yang akan memilih setelah kita.
+  const riskCut =
+    estimate && responseShare > 0 && openEnemy.length >= 2
+      ? riskCutoffs(data, taken, openEnemy, estimate)
+      : null;
 
   const open = openPositions(input.allies).sort(
     (a, b) => Number(b === input.position) - Number(a === input.position),
@@ -325,6 +374,7 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
       estimate,
       openEnemy,
       responseShare,
+      riskCut,
     }),
   }));
 
@@ -347,10 +397,12 @@ interface Context {
   openEnemy: number[];
   /** Bagian posisi musuh yang masih kosong yang akan memilih setelah melihat pick ini. */
   responseShare: number;
+  riskCut: { low: number; high: number } | null;
 }
 
 function suggestFor(position: number, ctx: Context): PickSuggestion[] {
-  const { input, data, byId, taken, allies, enemies, estimate, openEnemy, responseShare } = ctx;
+  const { input, data, byId, taken, allies, enemies, estimate, openEnemy, responseShare, riskCut } =
+    ctx;
   const forUser = position === input.position;
   const opponents = laneOpponents(position);
 
@@ -401,18 +453,17 @@ function suggestFor(position: number, ctx: Context): PickSuggestion[] {
     }
 
     // Musuh yang belum di-pick: apakah hero ini mudah di-counter di ronde berikutnya?
-    if (estimate && responseShare > 0 && openEnemy.length >= 2) {
-      const threats = openEnemy
-        .map((q) => estimate(hero.id, q))
-        .filter((t): t is UnknownEstimate => t !== null && t.worstHeroId !== null);
-      const worst = [...threats].sort((a, b) => a.worstValue - b.worstValue)[0];
-      const worstHero = worst?.worstHeroId ? byId.get(worst.worstHeroId) : undefined;
-      if (worst && worstHero && worst.worstValue <= -2.5) {
+    const risk = riskCut && estimate ? counterRisk(hero.id, openEnemy, estimate) : null;
+    if (riskCut && risk) {
+      const worstHero = risk.worst.worstHeroId ? byId.get(risk.worst.worstHeroId) : undefined;
+      // Kalau semua hero sama risikonya (batas bawah = batas atas), tidak ada yang diberi label.
+      const spread = riskCut.low < riskCut.high;
+      if (worstHero && spread && risk.risk <= riskCut.low && risk.risk <= MIN_RISK_TO_WARN) {
         reasons.push({
           kind: "weak",
-          text: `Easy to counter later, e.g. by ${worstHero.name} (${fmt(worst.worstValue)})`,
+          text: `Easy to counter later, e.g. by ${worstHero.name} (${fmt(risk.worst.worstValue)})`,
         });
-      } else if (threats.length && threats.every((t) => t.worstValue > -1.5)) {
+      } else if (spread && risk.risk >= riskCut.high) {
         reasons.push({
           kind: "blind",
           text:
