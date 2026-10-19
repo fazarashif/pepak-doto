@@ -146,6 +146,7 @@ Branch `feat/draft-rounds`. Keputusan D34–D38 di PRD.
 - **Tabel `vsmatrix`** ditulis sinkron harian setelah matchup tiap bracket. Kalau belum ada, aplikasi menyusunnya dari baris matchup di database (tanpa STRATZ) lalu menyimpannya.
 - **Backtest** (3.944 match, posisi ditebak): akurasi 57.1% dan AUC 0.594, dari 56.3% dan 0.591 sebelumnya. Bobot hasil fit tetap sekitar 1 / 0.2 / 0.5. Bobot lane 2 sedikit lebih baik dari 1, 3, dan 5, tapi masih dalam noise (±1.6 poin). Efek ronde tidak bisa di-backtest karena match publik tidak menyimpan urutan pick.
 - Test: 147 unit test.
+- **Perbaikan setelah deploy (PR #12):** label "Easy to counter later" sempat muncul di 43 dari 50 saran di production. Dengan data lengkap, 83–92% hero punya setidaknya satu counter -2.5% atau lebih buruk di antara hero populer, jadi batas tetap tidak berguna. Sekarang risiko counter (rata-rata dua counter terburuk per posisi musuh yang kosong) dibandingkan antar hero di draft itu. 20% terbawah diberi label mudah di-counter (asal risikonya juga ≤ -1.5), 20% teratas diberi label sulit di-counter. Dengan data backtest, hasilnya 7–12 dari 50 saran diberi label mudah di-counter.
 
 ## Temuan Tahap 2
 - **Token STRATZ hanya boleh dipakai dari 2 IP per 15 menit.** Server Vercel memakai IP yang berganti-ganti, jadi request dari production bisa ditolak dan draft jatuh ke data cadangan OpenDota. Solusinya sinkron harian lewat GitHub Actions (tugas 2.1).
