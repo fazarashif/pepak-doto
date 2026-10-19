@@ -1,7 +1,13 @@
 // Mesin rekomendasi draft. Fungsi murni: data masuk, rekomendasi keluar, tanpa fetch.
 // Semua angka dalam poin persen (pp): +2 berarti sekitar 2% lebih sering menang.
+//
+// Draft mengikuti Ranked All Pick dengan role queue: tiap tim punya posisi 1..5, dan pick
+// dilakukan dalam 3 ronde (2, 2, lalu 1 hero per tim). Pick dalam satu ronde tidak terlihat
+// lawan sampai ronde selesai, jadi hero yang di-pick di ronde awal bisa di-counter belakangan.
 
 import type { HeroInfo } from "@/lib/dota";
+import { PAIR_SHRINK, type VsMatrix } from "./matrix";
+import { ALL_POSITIONS, laneOf, laneOpponents, type Lane } from "./positions";
 
 /** Hubungan hero A dengan hero B dari sudut pandang A (data STRATZ). */
 export interface PairStat {
@@ -26,22 +32,36 @@ export interface DraftData {
   positions: Map<number, PositionStat[]>;
   /** Tabel matchup untuk hero yang sudah dipilih (kawan dan lawan). */
   matchups: Map<number, HeroMatchupTable>;
+  /** Keunggulan semua hero melawan semua hero, untuk menilai musuh yang belum di-pick. */
+  vsMatrix?: VsMatrix;
   /** Hero pool user yang login. */
   pool?: Map<number, { games: number; wins: number }>;
 }
 
-export interface DraftInput {
-  allies: number[];
-  enemies: number[];
-  bans: number[];
-  /** 0 = semua posisi, 1..5 */
+/** Hero di satu posisi (1..5). */
+export interface DraftSlot {
+  heroId: number;
   position: number;
+}
+
+export type DraftRound = 1 | 2 | 3;
+
+export interface DraftInput {
+  allies: DraftSlot[];
+  /** Posisi musuh sudah ditentukan (ditebak atau diisi user). */
+  enemies: DraftSlot[];
+  bans: number[];
+  /** Posisi user, 0 kalau tidak diisi. */
+  position: number;
+  /** Ronde pick yang sedang berjalan, dipilih user. */
+  round: DraftRound;
   poolOnly: boolean;
   /** Nama bracket untuk teks alasan, mis. "Legend and Ancient" */
   bracketLabel: string;
 }
 
-export type ReasonKind = "counter" | "weak" | "synergy" | "meta" | "pool" | "team" | "threat";
+export type ReasonKind =
+  "counter" | "weak" | "synergy" | "meta" | "pool" | "team" | "threat" | "blind";
 
 export interface Reason {
   kind: ReasonKind;
@@ -57,15 +77,31 @@ export interface PickSuggestion {
   reasons: Reason[];
 }
 
+export interface PositionPicks {
+  position: number;
+  suggestions: PickSuggestion[];
+}
+
 export interface BanSuggestion {
   heroId: number;
   score: number;
   reasons: Reason[];
 }
 
+export interface LaneOutlook {
+  lane: Lane;
+  allies: number[];
+  enemies: number[];
+  /** Rata-rata keunggulan hero kita melawan hero musuh di lane itu (pp). */
+  advantage: number;
+  verdict: "favored" | "even" | "tough";
+}
+
 export interface DraftResult {
-  picks: PickSuggestion[];
+  /** Saran untuk tiap posisi tim yang masih kosong; posisi user di depan. */
+  picks: PositionPicks[];
   bans: BanSuggestion[];
+  lanes: LaneOutlook[];
   warnings: string[];
 }
 
@@ -73,16 +109,29 @@ export interface DraftResult {
 // 1 / 0.2 / 0.5 memberi akurasi 56.3% dan AUC 0.591, sedikit di atas 1 / 0.6 / 0.7 (55.9%, 0.588).
 // Synergy ternyata lemah sebagai prediktor, jadi bobotnya kecil; meta paling kuat.
 export const WEIGHTS = { counter: 1.0, synergy: 0.2, meta: 0.5, banThreat: 1.0, banMeta: 0.7 };
-/** Semakin kecil sampel, semakin nilai ditarik ke nol. */
-const PAIR_SHRINK = 300;
+/**
+ * Lawan satu lane dihitung dua kali lipat. Backtest 2026-10-19 (3.944 match, posisi ditebak
+ * dari statistik posisi): akurasi 57.1% dan AUC 0.594, dari 56.3% dan 0.591 tanpa bobot lane.
+ * Bobot 2 sedikit lebih baik dari 1, 3 dan 5, tapi bedanya masih di dalam noise (±1.6 poin).
+ */
+export const LANE_WEIGHT = 2;
+/**
+ * Pick musuh setelah ronde ini, yang bisa memilih counter karena sudah melihat pick kita.
+ * Ronde 1: 2 pick di ronde 2 dan 1 di ronde 3. Ronde 2: 1 pick di ronde 3. Ronde 3: tidak ada.
+ */
+export const PICKS_AFTER_ROUND: Record<DraftRound, number> = { 1: 3, 2: 1, 3: 0 };
+/** Untuk musuh yang memilih setelah melihat kita: setengah jalan antara rata-rata dan counter terburuk. */
+const RESPONSE_PENALTY = 0.5;
+/** Hero terpopuler per posisi yang dianggap sebagai calon counter. */
+const THREAT_POOL = 15;
 const META_SHRINK = 500;
 const POOL_SHRINK = 10;
 export const MIN_POSITION_SHARE = 0.1;
 export const MIN_POOL_GAMES = 5;
-const PICK_LIMIT = 12;
+const PICK_LIMIT = 10;
 const BAN_LIMIT = 5;
 
-const POSITION_NAMES = ["", "carry", "mid", "offlane", "soft support", "hard support"];
+export const POSITION_NAMES = ["", "carry", "mid", "offlane", "soft support", "hard support"];
 
 function shrinkPair(stat: PairStat) {
   return stat.synergy * (stat.matchCount / (stat.matchCount + PAIR_SHRINK));
@@ -122,18 +171,50 @@ export function positionShare(stats: PositionStat[] | undefined, position: numbe
   return total ? (stats[position - 1]?.matches ?? 0) / total : null;
 }
 
+/** Keunggulan hero melawan satu musuh yang sudah terlihat, dari tabel `vs` milik musuh itu. */
+function advantageVs(heroId: number, enemyId: number, data: DraftData) {
+  const stat = data.matchups.get(enemyId)?.vs.get(heroId);
+  return stat ? -shrinkPair(stat) : null;
+}
+
 /**
  * Keunggulan hero melawan tiap musuh, dari tabel `vs` milik musuh itu (tandanya dibalik).
- * Dipakai oleh `recommend` dan script backtest, supaya keduanya memakai rumus yang sama.
+ * Rata-rata biasa tanpa posisi; dipakai script backtest.
  */
 export function counterAgainst(heroId: number, enemyIds: number[], data: DraftData) {
   const items = enemyIds
     .map((id) => {
-      const stat = data.matchups.get(id)?.vs.get(heroId);
-      return stat ? { id, value: -shrinkPair(stat) } : null;
+      const value = advantageVs(heroId, id, data);
+      return value === null ? null : { id, value };
     })
     .filter((x): x is { id: number; value: number } => x !== null);
   return { mean: mean(items.map((i) => i.value)), items };
+}
+
+/**
+ * Counter dengan posisi: rata-rata tertimbang atas kelima posisi musuh. Lawan satu lane
+ * berbobot LANE_WEIGHT. Posisi musuh yang masih kosong dinilai dengan `unknown(position)`
+ * (null berarti tidak ada data, posisi itu dilewati).
+ */
+export function laneCounter(
+  heroId: number,
+  position: number,
+  enemies: DraftSlot[],
+  data: DraftData,
+  unknown: (enemyPosition: number) => number | null = () => null,
+) {
+  const opponents = laneOpponents(position);
+  let sum = 0;
+  let weights = 0;
+  for (const q of ALL_POSITIONS) {
+    const enemy = enemies.find((e) => e.position === q);
+    const value = enemy ? advantageVs(heroId, enemy.heroId, data) : unknown(q);
+    if (value === null) continue;
+    const w = opponents.includes(q) ? LANE_WEIGHT : 1;
+    sum += w * value;
+    weights += w;
+  }
+  return weights ? sum / weights : 0;
 }
 
 /** Synergy hero dengan tiap kawan, dari tabel `with` milik kawan itu. */
@@ -147,11 +228,131 @@ export function synergyWith(heroId: number, allyIds: number[], data: DraftData) 
   return { mean: mean(items.map((i) => i.value)), items };
 }
 
+interface UnknownEstimate {
+  /** Rata-rata keunggulan melawan hero yang biasa main di posisi itu, ditimbang popularitas. */
+  expected: number;
+  /** Rata-rata dua counter terburuk di antara hero terpopuler di posisi itu. */
+  worst: number;
+  worstHeroId: number | null;
+  worstValue: number;
+}
+
+/**
+ * Siapkan penilaian musuh yang belum di-pick. Calon musuh per posisi: hero yang belum diambil
+ * dan cukup sering main di posisi itu.
+ */
+function unknownEstimator(data: DraftData, taken: Set<number>) {
+  const matrix = data.vsMatrix;
+  if (!matrix) return null;
+
+  const candidates = new Map<number, { heroId: number; weight: number }[]>();
+  for (const q of ALL_POSITIONS) {
+    const list: { heroId: number; weight: number }[] = [];
+    for (const [heroId, stats] of data.positions) {
+      if (taken.has(heroId)) continue;
+      const share = positionShare(stats, q);
+      if (share === null || share < MIN_POSITION_SHARE) continue;
+      list.push({ heroId, weight: stats[q - 1]?.matches ?? 0 });
+    }
+    list.sort((a, b) => b.weight - a.weight);
+    candidates.set(q, list);
+  }
+
+  const memo = new Map<string, UnknownEstimate | null>();
+  return (heroId: number, q: number): UnknownEstimate | null => {
+    const key = `${heroId}:${q}`;
+    if (memo.has(key)) return memo.get(key)!;
+    const row = matrix[heroId];
+    let result: UnknownEstimate | null = null;
+    if (row) {
+      let sum = 0;
+      let weights = 0;
+      const threats: { heroId: number; value: number }[] = [];
+      for (const c of candidates.get(q) ?? []) {
+        if (c.heroId === heroId) continue;
+        const value = row[c.heroId];
+        if (value === undefined) continue;
+        sum += c.weight * value;
+        weights += c.weight;
+        if (threats.length < THREAT_POOL) threats.push({ heroId: c.heroId, value });
+      }
+      if (weights > 0) {
+        threats.sort((a, b) => a.value - b.value);
+        const expected = sum / weights;
+        result = {
+          expected,
+          worst: threats.length ? mean(threats.slice(0, 2).map((t) => t.value)) : expected,
+          worstHeroId: threats[0]?.heroId ?? null,
+          worstValue: threats[0]?.value ?? 0,
+        };
+      }
+    }
+    memo.set(key, result);
+    return result;
+  };
+}
+
+export function openPositions(allies: DraftSlot[]) {
+  return ALL_POSITIONS.filter((p) => !allies.some((a) => a.position === p));
+}
+
 export function recommend(input: DraftInput, data: DraftData): DraftResult {
   const byId = new Map(data.heroes.map((h) => [h.id, h]));
-  const taken = new Set([...input.allies, ...input.enemies, ...input.bans]);
-  const allies = input.allies.map((id) => byId.get(id)).filter(Boolean) as HeroInfo[];
-  const enemies = input.enemies.map((id) => byId.get(id)).filter(Boolean) as HeroInfo[];
+  const allyIds = input.allies.map((a) => a.heroId);
+  const enemyIds = input.enemies.map((e) => e.heroId);
+  const taken = new Set([...allyIds, ...enemyIds, ...input.bans]);
+  const allies = allyIds.map((id) => byId.get(id)).filter(Boolean) as HeroInfo[];
+  const enemies = enemyIds.map((id) => byId.get(id)).filter(Boolean) as HeroInfo[];
+
+  const estimate = unknownEstimator(data, taken);
+  const openEnemy = ALL_POSITIONS.filter((p) => !input.enemies.some((e) => e.position === p));
+  const responders = Math.min(openEnemy.length, PICKS_AFTER_ROUND[input.round]);
+  const responseShare = openEnemy.length ? responders / openEnemy.length : 0;
+
+  const open = openPositions(input.allies).sort(
+    (a, b) => Number(b === input.position) - Number(a === input.position),
+  );
+
+  const picks = open.map((position) => ({
+    position,
+    suggestions: suggestFor(position, {
+      input,
+      data,
+      byId,
+      taken,
+      allies,
+      enemies,
+      estimate,
+      openEnemy,
+      responseShare,
+    }),
+  }));
+
+  return {
+    picks,
+    bans: suggestBans(input, data, byId, taken),
+    lanes: laneOutlook(input, data),
+    warnings: compositionWarnings(allies, enemies),
+  };
+}
+
+interface Context {
+  input: DraftInput;
+  data: DraftData;
+  byId: Map<number, HeroInfo>;
+  taken: Set<number>;
+  allies: HeroInfo[];
+  enemies: HeroInfo[];
+  estimate: ReturnType<typeof unknownEstimator>;
+  openEnemy: number[];
+  /** Bagian posisi musuh yang masih kosong yang akan memilih setelah melihat pick ini. */
+  responseShare: number;
+}
+
+function suggestFor(position: number, ctx: Context): PickSuggestion[] {
+  const { input, data, byId, taken, allies, enemies, estimate, openEnemy, responseShare } = ctx;
+  const forUser = position === input.position;
+  const opponents = laneOpponents(position);
 
   const teamLacks = (role: string) => allies.length >= 2 && !allies.some((h) => hasRole(h, role));
   const slipperyEnemies = enemies.filter((h) => hasRole(h, "Escape"));
@@ -162,33 +363,71 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
     if (taken.has(hero.id)) continue;
     const stats = data.positions.get(hero.id);
 
-    const share = positionShare(stats, input.position);
+    const share = positionShare(stats, position);
     if (share !== null && share < MIN_POSITION_SHARE) continue;
 
-    const poolEntry = data.pool?.get(hero.id);
-    if (input.poolOnly && (!poolEntry || poolEntry.games < MIN_POOL_GAMES)) continue;
+    const poolEntry = forUser ? data.pool?.get(hero.id) : undefined;
+    if (forUser && input.poolOnly && (!poolEntry || poolEntry.games < MIN_POOL_GAMES)) continue;
 
     const reasons: Reason[] = [];
 
-    const vs = counterAgainst(hero.id, input.enemies, data);
-    const counter = vs.mean;
-    const sortedVs = vs.items
-      .map((i) => ({ hero: byId.get(i.id)!, adv: i.value }))
-      .filter((v) => v.hero)
+    const unknownValue = (q: number) => {
+      const est = estimate?.(hero.id, q);
+      if (!est) return null;
+      return est.expected + responseShare * RESPONSE_PENALTY * (est.worst - est.expected);
+    };
+    const counter = laneCounter(hero.id, position, input.enemies, data, unknownValue);
+
+    const seen = input.enemies
+      .map((e) => ({ e, hero: byId.get(e.heroId), adv: advantageVs(hero.id, e.heroId, data) }))
+      .filter((v): v is { e: DraftSlot; hero: HeroInfo; adv: number } => !!v.hero && v.adv !== null)
       .sort((a, b) => b.adv - a.adv);
-    for (const v of sortedVs.slice(0, 2)) {
-      if (v.adv >= 1)
-        reasons.push({ kind: "counter", text: `Strong against ${v.hero.name} (${fmt(v.adv)})` });
+    for (const v of seen.slice(0, 2)) {
+      if (v.adv >= 1) {
+        const where = opponents.includes(v.e.position) ? " in lane" : "";
+        reasons.push({
+          kind: "counter",
+          text: `Strong against ${v.hero.name}${where} (${fmt(v.adv)})`,
+        });
+      }
     }
-    const worst = sortedVs.at(-1);
-    if (worst && worst.adv <= -1.5) {
+    const worstSeen = seen.at(-1);
+    if (worstSeen && worstSeen.adv <= -1.5) {
+      const where = opponents.includes(worstSeen.e.position) ? " in lane" : "";
       reasons.push({
         kind: "weak",
-        text: `Struggles against ${worst.hero.name} (${fmt(worst.adv)})`,
+        text: `Struggles against ${worstSeen.hero.name}${where} (${fmt(worstSeen.adv)})`,
       });
     }
 
-    const withAllies = synergyWith(hero.id, input.allies, data);
+    // Musuh yang belum di-pick: apakah hero ini mudah di-counter di ronde berikutnya?
+    if (estimate && responseShare > 0 && openEnemy.length >= 2) {
+      const threats = openEnemy
+        .map((q) => estimate(hero.id, q))
+        .filter((t): t is UnknownEstimate => t !== null && t.worstHeroId !== null);
+      const worst = [...threats].sort((a, b) => a.worstValue - b.worstValue)[0];
+      const worstHero = worst?.worstHeroId ? byId.get(worst.worstHeroId) : undefined;
+      if (worst && worstHero && worst.worstValue <= -2.5) {
+        reasons.push({
+          kind: "weak",
+          text: `Easy to counter later, e.g. by ${worstHero.name} (${fmt(worst.worstValue)})`,
+        });
+      } else if (threats.length && threats.every((t) => t.worstValue > -1.5)) {
+        reasons.push({
+          kind: "blind",
+          text:
+            input.round === 1
+              ? "Few hard counters, safe to pick early"
+              : "Hard to counter with their last pick",
+        });
+      }
+    }
+
+    const withAllies = synergyWith(
+      hero.id,
+      ctx.input.allies.map((a) => a.heroId),
+      data,
+    );
     const synergy = withAllies.mean;
     const bestAlly = withAllies.items
       .map((i) => ({ hero: byId.get(i.id)!, syn: i.value }))
@@ -201,12 +440,11 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
       });
     }
 
-    const meta = metaScore(stats, input.position);
+    const meta = metaScore(stats, position);
     if (meta.winRate !== null && meta.matches >= 200) {
-      const where = input.position ? ` as ${POSITION_NAMES[input.position]}` : "";
       reasons.push({
         kind: "meta",
-        text: `${(meta.winRate * 100).toFixed(1)}% win rate${where} in ${input.bracketLabel}`,
+        text: `${(meta.winRate * 100).toFixed(1)}% win rate as ${POSITION_NAMES[position]} in ${input.bracketLabel}`,
       });
     }
 
@@ -240,12 +478,7 @@ export function recommend(input: DraftInput, data: DraftData): DraftResult {
   }
 
   picks.sort((a, b) => b.score - a.score);
-
-  return {
-    picks: picks.slice(0, PICK_LIMIT),
-    bans: suggestBans(input, data, byId, taken),
-    warnings: compositionWarnings(allies, enemies),
-  };
+  return picks.slice(0, PICK_LIMIT);
 }
 
 function suggestBans(
@@ -254,7 +487,7 @@ function suggestBans(
   byId: Map<number, HeroInfo>,
   taken: Set<number>,
 ): BanSuggestion[] {
-  const allies = input.allies.map((id) => byId.get(id)).filter(Boolean) as HeroInfo[];
+  const allies = input.allies.map((a) => byId.get(a.heroId)).filter(Boolean) as HeroInfo[];
   const totalMatches = [...data.positions.values()].flat().reduce((s, r) => s + r.matches, 0);
 
   const bans: BanSuggestion[] = [];
@@ -294,6 +527,38 @@ function suggestBans(
   }
   bans.sort((a, b) => b.score - a.score);
   return bans.slice(0, BAN_LIMIT);
+}
+
+const LANE_ORDER: Lane[] = ["safe", "mid", "off"];
+const OUR_LANE_POSITIONS: Record<Lane, number[]> = { safe: [1, 5], mid: [2], off: [3, 4] };
+
+/** Perkiraan tiap lane, untuk lane yang kedua sisinya sudah punya hero. */
+export function laneOutlook(input: DraftInput, data: DraftData): LaneOutlook[] {
+  const out: LaneOutlook[] = [];
+  for (const lane of LANE_ORDER) {
+    const ours = input.allies.filter((a) => laneOf(a.position) === lane);
+    const theirPositions = laneOpponents(OUR_LANE_POSITIONS[lane][0]);
+    const theirs = input.enemies.filter((e) => theirPositions.includes(e.position));
+    if (!ours.length || !theirs.length) continue;
+
+    const values: number[] = [];
+    for (const a of ours) {
+      for (const e of theirs) {
+        const v = advantageVs(a.heroId, e.heroId, data);
+        if (v !== null) values.push(v);
+      }
+    }
+    if (!values.length) continue;
+    const advantage = mean(values);
+    out.push({
+      lane,
+      allies: ours.sort((x, y) => x.position - y.position).map((a) => a.heroId),
+      enemies: theirs.sort((x, y) => x.position - y.position).map((e) => e.heroId),
+      advantage,
+      verdict: advantage >= 1.5 ? "favored" : advantage <= -1.5 ? "tough" : "even",
+    });
+  }
+  return out;
 }
 
 export function compositionWarnings(allies: HeroInfo[], enemies: HeroInfo[]): string[] {

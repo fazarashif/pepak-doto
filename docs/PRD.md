@@ -3,13 +3,15 @@
 | | |
 |---|---|
 | Status | **Draft untuk direview** |
-| Versi | 0.6 (2026-09-28) |
+| Versi | 0.7 (2026-10-19) |
 | Pemilik | Faza |
 | Dokumen terkait | [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [PROGRESS.md](PROGRESS.md) |
 
 > **Filosofi nama.** *"Pepak"* dalam bahasa Jawa berarti lengkap atau menyeluruh. Pepak Doto membantu pemain memahami Dota lebih dalam: tidak hanya bermain, tetapi belajar dari gameplay, mengenali kesalahan, memahami pola, dan terus berkembang.
 
 **Riwayat perubahan**
+- **0.7:**
+  - Draft Assistant mengikuti cara draft Ranked All Pick: ronde pick, posisi semua hero, perkiraan lane, dan input lebih cepat (keputusan D34–D38).
 - **0.6:**
   - Rincian F9 (narasi coaching) untuk Tahap 4 (keputusan D30–D33).
   - Game time di Game Plan menampilkan item inti berikutnya dan keadaan "saat ini".
@@ -130,6 +132,13 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
   2. **Saran ban** (5 hero).
   3. **Peringatan komposisi.**
 - **Perilaku:** rekomendasi otomatis diperbarui setiap kali hero ditambah atau dihapus. Hero yang sudah dipick atau di-ban tidak muncul lagi.
+- **Mengikuti Ranked All Pick (sejak 0.7):**
+  - **Cara draft di game:** 16 hero di-ban otomatis sebelum pick (dari ban list pemain dan ban rate di MMR itu). Lalu 3 ronde pick: 2, 2, lalu 1 hero per tim. Pick dalam satu ronde tidak terlihat lawan sampai ronde selesai. Aturannya sama dari Herald sampai Divine. Di atas 8500 MMR berlaku Immortal Draft dan match-nya privat, jadi datanya sedikit.
+  - **Ronde dipilih user** (1, 2, 3). Hero yang di-pick di ronde awal masih bisa di-counter musuh di ronde berikutnya, jadi hero yang mudah di-counter turun peringkatnya di ronde 1 dan sedikit di ronde 2. Ronde 3 murni counter-pick.
+  - **Tim per posisi** (role queue). Saran muncul untuk setiap posisi tim yang masih kosong, bukan hanya posisi user. Contohnya, support yang pick di ronde 1 tetap dapat saran untuk pick teman di ronde 2 dan 3. Hero pool user hanya dipakai untuk posisi user.
+  - **Posisi musuh ditebak** dari statistik posisi STRATZ dan bisa diubah user.
+  - **Lane:** counter terhadap lawan satu lane berbobot 2. Panel "Lanes" menilai tiap lane (favored, even, tough) kalau kedua sisi sudah punya hero.
+  - **Input cepat:** singkatan dan nama panggilan hero (am, cm, kotl, wr, bara), Enter memilih hasil teratas, dan mengetik di mana saja di halaman langsung mengisi kolom cari. Di HP, mengetik membuka dialog pemilih hero. Ban jadi opsional.
 - **Kriteria diterima:**
   - Tetap bisa memberi rekomendasi walau belum ada hero musuh.
   - Filter posisi mengurangi daftar ke hero yang wajar untuk posisi itu.
@@ -386,6 +395,11 @@ Prioritas: **P0** = wajib di MVP, **P1** = penting, **P2** = nice-to-have / butu
 | D31 | Pemicu narasi | Tombol di halaman; narasi tersimpan tampil langsung |
 | D32 | Membuat narasi | Hanya user yang login; tamu bisa membaca yang tersimpan |
 | D33 | LLM cadangan | Gemini dan OpenRouter (free tier), setelah Claude |
+| D34 | Mode draft | Ranked All Pick dulu (solo dan party). Captains Mode belum perlu |
+| D35 | Ronde pick | Dipilih user sendiri (1, 2, 3); app hanya menyarankan pindah ronde |
+| D36 | Saran untuk teman | Saran untuk semua posisi tim yang masih kosong, posisi user di depan |
+| D37 | Posisi dan lane | Tim sendiri per posisi; posisi musuh ditebak lalu bisa diubah; lawan satu lane berbobot 2 |
+| D38 | Input cepat | Singkatan/nama panggilan hero, Enter untuk memilih, mengetik di luar kolom cari langsung mencari |
 
 ## 12. Pertanyaan terbuka
 Lihat daftar pertanyaan di [DEVELOPMENT_PLAN §11](DEVELOPMENT_PLAN.md#11-pertanyaan-terbuka).
