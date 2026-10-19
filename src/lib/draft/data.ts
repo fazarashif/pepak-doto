@@ -1,8 +1,10 @@
 import "server-only";
+import type { HeroInfo } from "@/lib/dota";
 import type { DraftData, HeroMatchupTable, PositionStat } from "@/lib/draft/engine";
+import type { VsMatrix } from "@/lib/draft/matrix";
 import { getHeroes } from "@/lib/heroes";
 import { opendota } from "@/lib/opendota/client";
-import { getMatchups, getPositions } from "@/lib/hero-data/store";
+import { getMatchups, getPositions, getVsMatrix } from "@/lib/hero-data/store";
 
 export type DraftSource = "stratz" | "opendota";
 
@@ -22,9 +24,14 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 
 /** Data STRATZ hasil sinkron harian. Null kalau ada yang belum tersedia. */
 async function fromStratz(picked: number[], bracket: number) {
-  const [positionRows, tables] = await Promise.all([
+  const [positionRows, tables, vsMatrix] = await Promise.all([
     getPositions(bracket),
     mapLimit(picked, 4, (id) => getMatchups(id, bracket)),
+    // Tanpa tabel ini saran tetap jalan, hanya musuh yang belum di-pick dianggap netral.
+    getVsMatrix(bracket).catch((err): VsMatrix | null => {
+      console.warn("[draft] vs matrix failed", err);
+      return null;
+    }),
   ]);
   if (!positionRows?.length || tables.some((t) => t === null)) return null;
 
@@ -44,7 +51,7 @@ async function fromStratz(picked: number[], bracket: number) {
   tables.forEach((t, i) => {
     matchups.set(picked[i], { with: toMap(t!.with), vs: toMap(t!.vs) });
   });
-  return { positions, matchups };
+  return { positions, matchups, vsMatrix: vsMatrix ?? undefined };
 }
 
 /**
@@ -84,7 +91,7 @@ async function fromOpenDota(picked: number[], bracket: number) {
       ),
     });
   });
-  return { positions, matchups };
+  return { positions, matchups, vsMatrix: undefined as VsMatrix | undefined };
 }
 
 export async function loadDraftData({
@@ -127,9 +134,50 @@ export async function loadDraftData({
       heroes,
       positions: tables.positions,
       matchups: tables.matchups,
+      vsMatrix: tables.vsMatrix,
       pool: pool?.ok
         ? new Map(pool.rows.map((r) => [r.hero_id, { games: r.games, wins: r.win }]))
         : undefined,
     },
   };
+}
+
+/**
+ * Porsi game tiap hero di posisi 1..5 (semua rank), untuk menebak posisi saat hero ditambahkan
+ * ke draft. Kalau data STRATZ belum ada, ditebak kasar dari role hero.
+ */
+export async function getPositionShares(heroes: HeroInfo[]): Promise<[number, number[]][]> {
+  const rows = await getPositions(0).catch(() => null);
+  if (rows?.length) {
+    const totals = new Map<number, number[]>();
+    for (const r of rows) {
+      if (r.position < 1 || r.position > 5) continue;
+      const list = totals.get(r.heroId) ?? [0, 0, 0, 0, 0];
+      list[r.position - 1] = r.matchCount;
+      totals.set(r.heroId, list);
+    }
+    return [...totals].map(([id, list]) => [id, normalizeShares(list)]);
+  }
+  return heroes.map((h) => [h.id, sharesFromRoles(h.roles)]);
+}
+
+function normalizeShares(list: number[]) {
+  const total = list.reduce((a, b) => a + b, 0);
+  return list.map((n) => (total ? Math.round((n / total) * 1000) / 1000 : 0.2));
+}
+
+function sharesFromRoles(roles: string[]) {
+  const w = [0.05, 0.05, 0.05, 0.05, 0.05];
+  const has = (r: string) => roles.includes(r);
+  if (has("Carry")) {
+    w[0] += 1;
+    w[1] += 0.4;
+  }
+  if (has("Nuker") && !has("Support")) w[1] += 0.4;
+  if (has("Initiator") || has("Durable")) w[2] += 0.7;
+  if (has("Support")) {
+    w[3] += 1;
+    w[4] += 1;
+  }
+  return normalizeShares(w);
 }

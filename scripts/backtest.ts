@@ -15,7 +15,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
-  counterAgainst,
+  laneCounter,
   metaScore,
   synergyWith,
   WEIGHTS,
@@ -23,6 +23,7 @@ import {
   type HeroMatchupTable,
   type PositionStat,
 } from "../src/lib/draft/engine";
+import { assignPositions, sharesFrom } from "../src/lib/draft/positions";
 
 try {
   process.loadEnvFile(".env.local");
@@ -197,10 +198,20 @@ async function loadGroupData(group: GroupName, heroIds: number[]): Promise<Draft
 
 // ---- Skor tim ----
 
+// Match publik tidak menyebut posisi, jadi posisi ditebak dengan cara yang sama seperti
+// halaman draft menebak posisi musuh.
+function guessPositions(team: number[], data: DraftData) {
+  const shares = new Map([...data.positions].map(([id, stats]) => [id, sharesFrom(stats)]));
+  return assignPositions(team, shares);
+}
+
 function teamFeatures(team: number[], enemy: number[], data: DraftData) {
   const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const ours = guessPositions(team, data);
+  const theirs = guessPositions(enemy, data);
+  const enemySlots = enemy.map((heroId) => ({ heroId, position: theirs.get(heroId) ?? 0 }));
   return {
-    counter: avg(team.map((h) => counterAgainst(h, enemy, data).mean)),
+    counter: avg(team.map((h) => laneCounter(h, ours.get(h) ?? 0, enemySlots, data))),
     synergy: avg(
       team.map(
         (h) =>

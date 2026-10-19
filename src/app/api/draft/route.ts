@@ -4,21 +4,30 @@ import { loadDraftData } from "@/lib/draft/data";
 import { recommend } from "@/lib/draft/engine";
 import { bracketGroupLabel, bracketName } from "@/lib/dota";
 
-const heroIds = (max: number) => z.array(z.number().int().min(1).max(300)).max(max);
+const heroId = z.number().int().min(1).max(300);
+const heroIds = (max: number) => z.array(heroId).max(max);
+const slots = z
+  .array(z.object({ heroId, position: z.number().int().min(1).max(5) }))
+  .max(5)
+  .refine((list) => new Set(list.map((s) => s.position)).size === list.length, {
+    message: "Two heroes can't share a position",
+  });
 
 const bodySchema = z
   .object({
-    allies: heroIds(4),
-    enemies: heroIds(5),
+    allies: slots,
+    enemies: slots,
     bans: heroIds(16),
     bracket: z.number().int().min(0).max(8),
     position: z.number().int().min(0).max(5),
+    round: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
     poolOnly: z.boolean().default(false),
   })
   .refine(
-    (b) =>
-      new Set([...b.allies, ...b.enemies, ...b.bans]).size ===
-      b.allies.length + b.enemies.length + b.bans.length,
+    (b) => {
+      const ids = [...b.allies, ...b.enemies].map((s) => s.heroId).concat(b.bans);
+      return new Set(ids).size === ids.length;
+    },
     { message: "A hero can only appear once in the draft" },
   );
 
@@ -35,8 +44,8 @@ export async function POST(request: Request) {
 
   try {
     const { data, source, poolError } = await loadDraftData({
-      allies: body.allies,
-      enemies: body.enemies,
+      allies: body.allies.map((s) => s.heroId),
+      enemies: body.enemies.map((s) => s.heroId),
       bracket: body.bracket,
       accountId: user?.accountId,
     });
